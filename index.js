@@ -234,7 +234,7 @@ class Security2GoCard {
             //this.logSigning('v');
             //this.logSigning(this.toHex(tx.v));
             
-            console.log('v: ' + this.toHex(tx.v));
+            //console.log('v: ' + this.toHex(tx.v));
         
             const tx2 = new Tx(tx);
             //console.log('v: ' + tx2.v);
@@ -351,12 +351,20 @@ class Security2GoCard {
     }
 
     async signAndSendTransaction(web3, tx, cardKeyIndex = 1){
-
+        
         const signature = await this.generateSignature(web3, tx, cardKeyIndex);
+        const card = this;
         try {
-            const txReceipt = await web3.eth.sendSignedTransaction(signature);
-            //console.log('receipt: ' + txReceipt);
-            result = txReceipt;
+            this.logWeb3('sending transaction');
+            const txReceipt = await web3.eth.sendSignedTransaction(signature, (error, hash) => {
+                if (error) {
+                    console.error('Transaction failed!!');
+                }
+                if (hash) {
+                    card.logWeb3('tx hash:' + hash);
+                }
+            });
+            this.logWeb3('receipt: ' + txReceipt);
             return txReceipt;
         }
         catch (error) {
