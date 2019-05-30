@@ -1,0 +1,23 @@
+{
+  "name": "security2go",
+  "version": "0.0.1",
+  "description": "nodejs library for interacting with the Infineon Securiy2Go SmartCard for signing transactions for ethereum blockchain based systems.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@code.lab10.io:graz/04-artis/smartcard/security2go.git"
+  },
+  "keywords": [
+    "infineon",
+    "security2go",
+    "ethereum",
+    "evm",
+    "nfc",
+    "pcsclite"
+  ],
+  "author": "thomashaller@lab10.coop",
+  "license": "ISC"
+}
