@@ -19,5 +19,10 @@
     "pcsclite"
   ],
   "author": "thomashaller@lab10.coop",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "ethereumjs-tx": "^1.3.7",
+    "web3": "^1.0.0-beta.55",
+    "web3-utils": "^1.0.0-beta.55"
+  }
 }
