@@ -335,21 +335,6 @@ class Security2GoCard {
         }
     }
 
-    async signAndAwaitReceipt(web3, tx, cardKeyIndex = 1){
-        try {
-            var receipt = await this.signAndSendTransaction(web3, tx, cardKeyIndex); 
-            console.log('got receipt!!');          
-            console.log(receipt);
-            console.log('txHash:' + tx.transactionHash);
-            var newReceipt = await web3.eth.getTransactionReceipt(tx.transactionHash);
-            console.log(newReceipt);
-
-            return newReceipt;          
-        } catch(error) {
-            console.error('Error awaiting tx:' + error);
-        }
-    }
-
     async signAndSendTransaction(web3, tx, cardKeyIndex = 1){
         
         const signature = await this.generateSignature(web3, tx, cardKeyIndex);
