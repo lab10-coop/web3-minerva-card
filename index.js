@@ -164,7 +164,23 @@ class Security2GoCard {
             nonce = await web3.eth.getTransactionCount(address);
         }
 
-        rawTransaction.from = address;
+        // console.log(rawTransaction.from);
+        // if (rawTransaction.from) {
+        //     console.warn('rawTransaction raw' + address);
+        //     rawTransaction.from = address;
+        //     return;
+        // }
+        // else if (rawTransaction.from != address) {
+        //     console.error('rawTransaction.from must be address of the s2g card. rawTransaction.from:' + rawTransaction.from + ' address: ' + address);
+        //     return;
+        // }
+        // else {
+        //     console.log('No problem with address found!');
+        //     return;
+        // }
+
+
+        //
         rawTransaction.nonce = nonce;
 
         const tx = new Tx(rawTransaction);
