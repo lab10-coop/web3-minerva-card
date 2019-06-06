@@ -1,4 +1,4 @@
-/*
+/**
 * @file Web3 Security2Go
 * @author Thomas Haller <thomas.haller@lab10.coop>
 * @version 0.1
@@ -83,12 +83,12 @@ function getGenericErrorAsString(errorCode) {
     return "ErrorCode Unknown";
 }
 
-/*
+/**
 * Sends raw byte commands to the card and receives the response.
 * sends the always required SelectApp command in advance.
 * 
 * @param {Security2GoCard} card object
-* @param {bytes} a raw byte[] with the netto data.
+* @param {byte[]} bytes raw byte[] with the netto data.
 * @param {receiveHandler} callback once the operation is finished.
 */
 function sendCommand(card, bytes, receiveHandler = null) {
@@ -188,15 +188,19 @@ async function generateSignatureRaw(card, bytes, keyIndex){
     }
 }
 
-
 class Security2GoCard {
 
+    /**
+     * Represents an Infinion Security2Go played on a card reader using the pcsclite framework.
+     * 
+     * @param {pcsclite.CardReader} reader a CardReader from pcsclite.
+     */
     constructor(reader) {
 
       this.reader = reader;
       this.PROTOCOL_ID = 2; //todo: dont know meaning yet...
-      this.log_debug_signing = true;
-      this.log_debug_web3 = true;
+      this.log_debug_signing = false;
+      this.log_debug_web3 = false;
     }
 
     /**
@@ -219,8 +223,6 @@ class Security2GoCard {
         //card.logSigning(responseFunction);
         //return new Promise(resolve => {});
     }
-
-
 
     /**
     * returns the (ethereum) address of the given index of the card.
@@ -405,10 +407,10 @@ class Security2GoCard {
      */
     logSigning(message) {
         if (this.log_debug_signing) {
-          console.log(message)
+            console.log(message)
         }
     };
-  }
+}
 
 module.exports = {
     Security2GoCard
