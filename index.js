@@ -288,7 +288,7 @@ class Security2GoCard {
         let i = 0;
 
         var cardSig = await generateSignatureRaw(this, hashBytes, cardKeyIndex);
-        
+        console.log('cardsig: ',cardSig);
         do {
             if (i > 1) {
                 const failure = 'no valid transaction could be calculated.'
@@ -329,12 +329,18 @@ class Security2GoCard {
             tx.r = '0x' + r;
             tx.s = '0x' + s;
 
+
+
+
             //todo: learn more about "v"
             if (i == 0) {
                 tx.v = '0x1b'
             } else {
                 tx.v = '0x1c'
             }
+
+            console.log(`rStart: ${rStart}, rLength: ${rLength}, sStart: ${sStart}, sLength: ${sLength}`);
+            console.log(`r: ${toHex(tx.r)}, s: ${toHex(tx.s)}, v: ${toHex(tx.v)}`);
 
             //this.logSigning('v');
             //this.logSigning(toHex(tx.v));
@@ -352,18 +358,41 @@ class Security2GoCard {
             i += 1;
             var txIsValid = false;
 
-            try{
-                txIsValid = web3.eth.accounts.recoverTransaction(serializedTx).toLocaleLowerCase() === address;
-            } catch (error) {
-                //console.error('SigError detected: ' + error);
-                if (error == 'Error: The recovery param is more than two bits') {
-                    i = 0;
-                    cardSig = await generateSignatureRaw(this, hashBytes, cardKeyIndex);
+            web3._lastR = rLength;
+            web3._lastS = sLength;
+
+            console.log(`tx: ${JSON.stringify(tx2, null, 2)}`);
+            //console.log(i);
+            //try{
+
+
+            if (rLength  != tx.r.length) {
+                console.error(`wrong R length - expecting this to fail rLength ${rLength} tx.r.length ${tx.r.length}`);
+            }
+
+            if (sLength != tx.s.length) {
+                console.error(`wrong S length - expecting this to fail ${sLength} tx.s.length ${tx.s.length}`);
+            }
+
+            txIsValid = web3.eth.accounts.recoverTransaction(serializedTx).toLocaleLowerCase() === address;
+            /*} catch (error) {
+                console.error(`SigError detected: ${error}, i: ${i}`);
+                if (i == 0) {
+                    txIsValid = false;
+                }
+                else if (error == 'Error: The recovery param is more than two bits') {
+                    
+                    //i = 0;
+                    //cardSig = await generateSign
+            if (rLength * 2 + 2 != tx.r.length) {
+                console.error('wrong R length - expecting this to fail');
+            }atureRaw(this, hashBytes, cardKeyIndex);
                     //console.error('Continue with new signature...');
+                    break;
                 } else {
                     throw error;
                 }
-            }
+            }*/
 
           } while (txIsValid == false);
 
