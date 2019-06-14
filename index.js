@@ -287,7 +287,7 @@ class Security2GoCard {
         let serializedTx = '';
         let i = 0;
 
-        const cardSig = await generateSignatureRaw(this, hashBytes, cardKeyIndex);
+        var cardSig = await generateSignatureRaw(this, hashBytes, cardKeyIndex);
         
         do {
             if (i > 1) {
@@ -350,17 +350,22 @@ class Security2GoCard {
             //this.logSigning(web3.eth.accounts.recoverTransaction(toHex(serializedTx)));
         
             i += 1;
+            var txIsValid = false;
 
-            // var txIsValid = false;
+            try{
+                txIsValid = web3.eth.accounts.recoverTransaction(serializedTx).toLocaleLowerCase() === address;
+            } catch (error) {
+                //console.error('SigError detected: ' + error);
+                if (error == 'Error: The recovery param is more than two bits') {
+                    i = 0;
+                    cardSig = await generateSignatureRaw(this, hashBytes, cardKeyIndex);
+                    //console.error('Continue with new signature...');
+                } else {
+                    throw error;
+                }
+            }
 
-            // try
-            // {
-
-            // } catch (error) {
-
-            // }
-
-          } while (web3.eth.accounts.recoverTransaction(serializedTx).toLocaleLowerCase() !== address);
+          } while (txIsValid == false);
 
           this.logSigning('serialized transaction:' + serializedTx);
 
