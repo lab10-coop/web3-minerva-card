@@ -94,7 +94,7 @@ function getGenericErrorAsString(errorCode) {
 function sendCommand(card, bytes, receiveHandler = null) {
     var maxResponseLength = 128;
     card.logSigning('connecting...');
-    this.reader.connect({}, function(err, protocol) {
+    card.reader.connect({}, function(err, protocol) {
         if (err) {
             console.error('Connecting Error:' + err);
         } else {
@@ -343,18 +343,28 @@ class Security2GoCard {
         
             const tx2 = new Tx(tx);
             //console.log('v: ' + tx2.v);
-            serializedTx = tx2.serialize();
+            serializedTx = toHex(tx2.serialize());
             this.logSigning('serializedTx');
-            this.logSigning(toHex(serializedTx));
+            this.logSigning(serializedTx);
             //card.logSigning('tx2.v', toHex(tx2.v));
             //this.logSigning(web3.eth.accounts.recoverTransaction(toHex(serializedTx)));
         
             i += 1;
-          } while (web3.eth.accounts.recoverTransaction(toHex(serializedTx)).toLocaleLowerCase() !== address);
+
+            // var txIsValid = false;
+
+            // try
+            // {
+
+            // } catch (error) {
+
+            // }
+
+          } while (web3.eth.accounts.recoverTransaction(serializedTx).toLocaleLowerCase() !== address);
 
           this.logSigning('serialized transaction:' + serializedTx);
 
-          return toHex(serializedTx);
+          return serializedTx;
     }
 
 
@@ -371,14 +381,7 @@ class Security2GoCard {
         const card = this;
         try {
             this.logWeb3('sending transaction');
-            const txReceipt = await web3.eth.sendSignedTransaction(signature, (error, hash) => {
-                if (error) {
-                    console.error('Transaction failed!!', error);
-                }
-                if (hash) {
-                    card.logWeb3('tx hash:' + hash);
-                }
-            });
+            const txReceipt = await web3.eth.sendSignedTransaction(signature);
             this.logWeb3('receipt: ' + txReceipt);
             return txReceipt;
         }
