@@ -248,7 +248,7 @@ class Security2GoCard {
     * @param {byte} cardKeyIndex keyIndex index (0..255) of the Security2Go Card.
     * @param {number} nonce optional nonce, if not supplied, the nonce is retrieved with a RPC call by the provided web3 object.
     */
-    async generateSignature(web3, rawTransaction, cardKeyIndex = 1, nonce) {
+    async signTransaction(web3, rawTransaction, cardKeyIndex = 1, nonce) {
 
         const address = await this.getAddress(cardKeyIndex);
         this.logSigning('address');
@@ -367,7 +367,7 @@ class Security2GoCard {
      */
     async signAndSendTransaction(web3, tx, cardKeyIndex = 1){
         
-        const signature = await this.generateSignature(web3, tx, cardKeyIndex);
+        const signature = await this.signTransaction(web3, tx, cardKeyIndex);
         const card = this;
         try {
             this.logWeb3('sending transaction');
