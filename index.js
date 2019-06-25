@@ -241,6 +241,7 @@ class Security2GoCard {
         return address;
     }
 
+
     /**
     * Generates a signature for a given web3 style transaction
     * @param {Web3} web3 a Web3 instance.
@@ -249,6 +250,13 @@ class Security2GoCard {
     * @param {number} nonce optional nonce, if not supplied, the nonce is retrieved with a RPC call by the provided web3 object.
     */
     async signTransaction(web3, rawTransaction, cardKeyIndex = 1, nonce) {
+
+        const tx = await this.getSignedTransactionObject(web3, rawTransaction, cardKeyIndex, nonce);
+        return toHex(tx.serialize());;
+    }
+
+
+    async getSignedTransactionObject(web3, rawTransaction, cardKeyIndex = 1, nonce) {
 
         const address = await this.getAddress(cardKeyIndex);
         this.logSigning('address');
@@ -375,6 +383,7 @@ class Security2GoCard {
             }
 
             txIsValid = web3.eth.accounts.recoverTransaction(serializedTx).toLocaleLowerCase() === address;
+
             /*} catch (error) {
                 console.error(`SigError detected: ${error}, i: ${i}`);
                 if (i == 0) {
@@ -397,8 +406,7 @@ class Security2GoCard {
           } while (txIsValid == false);
 
           this.logSigning('serialized transaction:' + serializedTx);
-
-          return serializedTx;
+          return tx;
     }
 
 
