@@ -65,22 +65,36 @@ function getPublicKey_function(args, callback) {
  * @returns {string} error message
  */
 function getGenericErrorAsString(errorCode) {
+
+    //todo: maybe thread the error codes in lookup tables ?
+    //that would make it easier to distinguish between generic and specific errors.
+
     if (errorCode[0] == 0x90 && errorCode[1] == 0)
         return "Success";
     if (errorCode[0] == 0x64)
         return "Operation failed (" + errorCode[1] + ")";
     if (errorCode[0] == 0x67 && errorCode[1] == 0)
         return "Wrong length";
-    if (errorCode[0] == 0x6A && errorCode[1] == 0x86)
-        return "Incorrect parameters P1/P2";
+    if (errorCode[0] == 0x6A) {
+        if (errorCode[1] == 0x86)
+            return "Incorrect parameters P1/P2";
+        if (errorCode[1] == 0x88) //this is NOT documented as a "Generic Error" but for now it seems to be safe to thread it like this.
+            return "Key slot with given index is not available";
+    }
+     
+            
     if (errorCode[0] == 0x6D && errorCode[1] == 0)
         return "Instruction code is not supported or invalid or application has not selected with the SELECT APP command";
     if (errorCode[0] == 0x6E && errorCode[1] == 0)
         return "Class not supported";
     if (errorCode[0] == 0x6F && errorCode[1] == 0)
         return "Unknown Error";
+
+    function InttoHex(d) {
+        return  ("0"+(Number(d).toString(16))).slice(-2).toUpperCase()
+    }
     
-    return "ErrorCode Unknown";
+    return "ErrorCode Unknown:" + InttoHex(errorCode[0]) + " " + InttoHex(errorCode[1]);
 }
 
 /**
@@ -347,17 +361,18 @@ class Security2GoCard {
                 tx.v = '0x1c'
             }
 
-            console.log(`rStart: ${rStart}, rLength: ${rLength}, sStart: ${sStart}, sLength: ${sLength}`);
-            console.log(`r: ${toHex(tx.r)}, s: ${toHex(tx.s)}, v: ${toHex(tx.v)}`);
+            //console.log(`rStart: ${rStart}, rLength: ${rLength}, sStart: ${sStart}, sLength: ${sLength}`);
+            //console.log(`r: ${toHex(tx.r)}, s: ${toHex(tx.s)}, v: ${toHex(tx.v)}`);
 
             //this.logSigning('v');
             //this.logSigning(toHex(tx.v));
             
             //console.log('v: ' + toHex(tx.v));
         
-            const tx2 = new Tx(tx);
+            //const tx2 = new Tx(tx);
+            
             //console.log('v: ' + tx2.v);
-            serializedTx = toHex(tx2.serialize());
+            serializedTx = toHex(tx.serialize());
             this.logSigning('serializedTx');
             this.logSigning(serializedTx);
             //card.logSigning('tx2.v', toHex(tx2.v));
@@ -366,21 +381,18 @@ class Security2GoCard {
             i += 1;
             var txIsValid = false;
 
-            web3._lastR = rLength;
-            web3._lastS = sLength;
-
-            console.log(`tx: ${JSON.stringify(tx2, null, 2)}`);
+            console.log(`tx: ${JSON.stringify(tx, null, 2)}`);
             //console.log(i);
             //try{
 
 
-            if (rLength  != tx.r.length) {
-                console.error(`wrong R length - expecting this to fail rLength ${rLength} tx.r.length ${tx.r.length}`);
-            }
+            // if (rLength  != tx.r.length) {
+            //     console.error(`wrong R length - expecting this to fail rLength ${rLength} tx.r.length ${tx.r.length}`);
+            // }
 
-            if (sLength != tx.s.length) {
-                console.error(`wrong S length - expecting this to fail ${sLength} tx.s.length ${tx.s.length}`);
-            }
+            // if (sLength != tx.s.length) {
+            //     console.error(`wrong S length - expecting this to fail ${sLength} tx.s.length ${tx.s.length}`);
+            // }
 
             txIsValid = web3.eth.accounts.recoverTransaction(serializedTx).toLocaleLowerCase() === address;
 
@@ -420,7 +432,9 @@ class Security2GoCard {
     async signAndSendTransaction(web3, tx, cardKeyIndex = 1){
         
         const signature = await this.signTransaction(web3, tx, cardKeyIndex);
-        const card = this;
+
+        console.log(`tx: ${JSON.stringify(tx, null, 2)}`);
+
         try {
             this.logWeb3('sending transaction');
             const txReceipt = await web3.eth.sendSignedTransaction(signature);
