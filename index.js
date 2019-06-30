@@ -11,18 +11,18 @@ const Tx = require('ethereumjs-tx');
 function toHex(nonHex, prefix = true) {
     let temp = nonHex.toString('hex');
     if (prefix) {
-      temp = `0x${temp}`;
+        temp = `0x${temp}`;
     }
     return temp;
 };
 
 function toHexString(byteArray) {
     var s = '0x';
-    byteArray.forEach(function(byte) {
-      s += ('0' + (byte & 0xFF).toString(16)).slice(-2);
+    byteArray.forEach(function (byte) {
+        s += ('0' + (byte & 0xFF).toString(16)).slice(-2);
     });
     return s;
-  }
+}
 
 function isError(code) {
     if (code[0] == 0x90 && code[1] == 0)
@@ -32,13 +32,13 @@ function isError(code) {
 
 function getPublicKey_function(args, callback) {
     const card = args.card;
-    sendCommand(card, args.command, function(response) {
+    sendCommand(card, args.command, function (response) {
         if (response.length == 2) {
             if (response[0] == 0x69) {
                 if (response[1] == 82) {
-                card.logSigning('Maximal number of key import calls exceeded (Security status not satisfied)');
+                    card.logSigning('Maximal number of key import calls exceeded (Security status not satisfied)');
                 } else if (response[1] == 85) {
-                card.logSigning('Not authenticated with PIN (Condition of use not satisfied)');
+                    card.logSigning('Not authenticated with PIN (Condition of use not satisfied)');
                 }
             }
             if (response[0] == 0x6a && response[1] == 0x88) {
@@ -81,8 +81,8 @@ function getGenericErrorAsString(errorCode) {
         if (errorCode[1] == 0x88) //this is NOT documented as a "Generic Error" but for now it seems to be safe to thread it like this.
             return "Key slot with given index is not available";
     }
-     
-            
+
+
     if (errorCode[0] == 0x6D && errorCode[1] == 0)
         return "Instruction code is not supported or invalid or application has not selected with the SELECT APP command";
     if (errorCode[0] == 0x6E && errorCode[1] == 0)
@@ -91,9 +91,9 @@ function getGenericErrorAsString(errorCode) {
         return "Unknown Error";
 
     function InttoHex(d) {
-        return  ("0"+(Number(d).toString(16))).slice(-2).toUpperCase()
+        return ("0" + (Number(d).toString(16))).slice(-2).toUpperCase()
     }
-    
+
     return "ErrorCode Unknown:" + InttoHex(errorCode[0]) + " " + InttoHex(errorCode[1]);
 }
 
@@ -108,20 +108,20 @@ function getGenericErrorAsString(errorCode) {
 function sendCommand(card, bytes, receiveHandler = null) {
     var maxResponseLength = 128;
     card.logSigning('connecting...');
-    card.reader.connect({}, function(err, protocol) {
+    card.reader.connect({}, function (err, protocol) {
         if (err) {
             console.error('Connecting Error:' + err);
         } else {
             protocol = card.PROTOCOL_ID;
             card.logSigning('protocol:' + protocol);
             var selectAppIncldingCommand = [0x00, 0xA4, 0x04, 0x00, 0x0D, /* start of body*/ 0xD2, 0x76, 0x00, 0x00, 0x04, 0x15, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01 /* end of body */, 12];
-            card.reader.transmit(new Buffer(selectAppIncldingCommand), maxResponseLength, protocol, function(err, data) {
+            card.reader.transmit(new Buffer(selectAppIncldingCommand), maxResponseLength, protocol, function (err, data) {
                 card.logSigning('select App Completed');
                 if (err) {
                     console.error(err);
                 } else {
                     //todo: validate result.
-                    card.reader.transmit(new Buffer(bytes), maxResponseLength, protocol, function(err, data) {
+                    card.reader.transmit(new Buffer(bytes), maxResponseLength, protocol, function (err, data) {
                         if (err) {
                             //todo: interprate error here ?
                             card.logSigning('Error on transmitting')
@@ -129,12 +129,12 @@ function sendCommand(card, bytes, receiveHandler = null) {
                             return [];
                         } else {
                             card.logSigning('Data received', data);
-    
+
                             //asume all 2 byte results are errors ?!
                             if (data.length == 2 && isError(data)) {
                                 console.error('Received Data is Error received: ' + getGenericErrorAsString(data));
                             }
-                            
+
                             card.logSigning(receiveHandler);
                             //reader.close();
                             //pcsc.close();
@@ -142,24 +142,26 @@ function sendCommand(card, bytes, receiveHandler = null) {
                                 receiveHandler(data);
                             }
                         }
-                    });   
-                }                 
+                    });
+                }
             });
         }
     });
 }
 
-async function generateSignatureRaw(card, bytes, keyIndex){
+async function generateSignatureRaw(card, bytes, keyIndex) {
 
-    function generateSignatureRaw_function(args, callback)  {
+    function generateSignatureRaw_function(args, callback) {
 
         const bytes = args.bytes;
         const keyIndex = args.keyIndex;
         const card = args.card;
 
+
         if (bytes.length != 32) {
-            card.logSigning('message to sign needs to be 32 byte long.');
-            return;
+            const error = 'message to sign needs to be 32 byte long. got:' + bytes.length;
+            card.logSigning(error);
+            throw error;
         }
 
         var messageBuffer = new ArrayBuffer(38);
@@ -168,18 +170,18 @@ async function generateSignatureRaw(card, bytes, keyIndex){
         messageBufferView[1] = 0x18;
         messageBufferView[2] = keyIndex;
         messageBufferView[3] = 0x00;
-        messageBufferView[4] = 0x20;        
-        messageBufferView.set(bytes,5);
-        
+        messageBufferView[4] = 0x20;
+        messageBufferView.set(bytes, 5);
+
         card.logSigning('signing: ' + toHexString(messageBufferView));
-        sendCommand(card, messageBuffer, function(sendCommandResponse, error) {
+        sendCommand(card, messageBuffer, function (sendCommandResponse, error) {
             if (sendCommandResponse) {
                 card.logSigning("Signing: Got Response: " + toHexString(sendCommandResponse));
-                if (sendCommandResponse[sendCommandResponse.length - 2] == 0x90 && sendCommandResponse[sendCommandResponse.length - 1] == 0){
+                if (sendCommandResponse[sendCommandResponse.length - 2] == 0x90 && sendCommandResponse[sendCommandResponse.length - 1] == 0) {
                     card.logSigning("card Signature is a success!");
                     //todo: 
                     const resultBin = sendCommandResponse.slice(9, sendCommandResponse.length - 2);
-                    const result =  web3utils.bytesToHex(resultBin);
+                    const result = web3utils.bytesToHex(resultBin);
                     callback(null, result)
                     return;
                 } else {
@@ -187,19 +189,14 @@ async function generateSignatureRaw(card, bytes, keyIndex){
                 }
             }
             if (error) {
-                console.error("Signing Error: " + error);                
+                console.error("Signing Error: " + error);
                 callback(error, null);
             }
         });
     }
 
-    try {
-        var func = util.promisify(generateSignatureRaw_function);
-        return await func({card: card, bytes: bytes, keyIndex: keyIndex});        
-    } catch (error) {
-        console.error('Why the Fuck do i get an error here ?')
-        console.error(error)
-    }
+    var func = util.promisify(generateSignatureRaw_function);
+    return await func({ card: card, bytes: bytes, keyIndex: keyIndex });
 }
 
 class Security2GoCard {
@@ -211,10 +208,10 @@ class Security2GoCard {
      */
     constructor(reader) {
 
-      this.reader = reader;
-      this.PROTOCOL_ID = 2; //todo: dont know meaning yet...
-      this.log_debug_signing = false;
-      this.log_debug_web3 = false;
+        this.reader = reader;
+        this.PROTOCOL_ID = 2; //todo: dont know meaning yet...
+        this.log_debug_signing = false;
+        this.log_debug_web3 = false;
     }
 
     /**
@@ -223,17 +220,17 @@ class Security2GoCard {
     * @param {byte} cardKeyIndex index (0..255) of the Security2Go Card.
     * @return {string} public key
     */
-    async getPublicKey(cardKeyIndex=0) {
+    async getPublicKey(cardKeyIndex = 0) {
         var card = this;
         card.logSigning('getting key #' + cardKeyIndex);
-        var command= [0x00, 0x16,cardKeyIndex, 0x00, 0x00];
+        var command = [0x00, 0x16, cardKeyIndex, 0x00, 0x00];
 
         card.logSigning('response');
         //card.logSigning(responseFunction);
-        
+
         var func = util.promisify(getPublicKey_function);
 
-        return await func({card: this, command: command});
+        return await func({ card: this, command: command });
         //card.logSigning(responseFunction);
         //return new Promise(resolve => {});
     }
@@ -244,7 +241,7 @@ class Security2GoCard {
     * @param {byte} keyIndex index (0..255) of the Security2Go Card.
     * @return {string} public key
     */
-    async getAddress(keyCardIndex=0) {
+    async getAddress(keyCardIndex = 0) {
         const publicKey = await this.getPublicKey(keyCardIndex);
         const publicKeyHex = web3utils.bytesToHex(publicKey)
         this.logSigning('publicKeyHex:');
@@ -269,6 +266,62 @@ class Security2GoCard {
         return toHex(tx.serialize());;
     }
 
+    async getRSSignatureFromHash(hash, cardKeyIndex = 1) {
+
+        let hashBytes;
+
+        if (typeof hash === 'string') {
+            if (hash.startsWith('0x')) {
+                hash = hash.substring(2, hash.length);
+            }
+            hashBytes = Buffer.from(hash, 'hex');
+        } else {
+            hashBytes = hash;
+        }
+
+        console.log('hash:' + hash);
+
+        console.log('buffer: ' + hashBytes.length);
+
+        var cardSig = await generateSignatureRaw(this, hashBytes, cardKeyIndex);
+
+        this.logSigning('tries to generate signature.');
+
+        //const cardSig = await wrapper.generateSignature(1, hash.toString('hex'));
+
+        this.logSigning('cardSig');
+        this.logSigning(cardSig);
+
+        let rStart = 6;
+        let length = 2;
+        const rLength = parseInt(cardSig.slice(rStart, rStart + length), 16);
+        this.logSigning('rLength');
+        this.logSigning(rLength);
+        rStart += 2;
+        const r = cardSig.slice(rStart, rStart + rLength * 2);
+        this.logSigning('r');
+        this.logSigning(r);
+        console.assert(r.length == rLength * 2, 'r should be length ' + rLength * 2 + ' but has length ' + r.length);
+
+        let sStart = rStart + rLength * 2 + 2;
+        const sLength = parseInt(cardSig.slice(sStart, sStart + length), 16);
+        this.logSigning('sLength');
+        this.logSigning(sLength);
+
+        sStart += 2;
+        const s = cardSig.slice(sStart, sStart + sLength * 2);
+
+        this.logSigning('s');
+        this.logSigning(s);
+        console.assert(s.length == sLength * 2, 's should be length ' + sLength * 2 + ' but has length ' + s.length);
+
+        var result = {
+            r: '0x' + r,
+            s: '0x' + s
+        }
+
+        return result;
+    }
 
     async getSignedTransactionObject(web3, rawTransaction, cardKeyIndex = 1, nonce) {
 
@@ -280,77 +333,30 @@ class Security2GoCard {
             nonce = await web3.eth.getTransactionCount(address);
         }
 
-        // console.log(rawTransaction.from);
-        // if (rawTransaction.from) {
-        //     console.warn('rawTransaction raw' + address);
-        //     rawTransaction.from = address;
-        //     return;
-        // }
-        // else if (rawTransaction.from != address) {
-        //     console.error('rawTransaction.from must be address of the s2g card. rawTransaction.from:' + rawTransaction.from + ' address: ' + address);
-        //     return;
-        // }
-        // else {
-        //     console.log('No problem with address found!');
-        //     return;
-        // }
-
         rawTransaction.nonce = nonce;
 
         const tx = new Tx(rawTransaction);
-        
+
         const hashBytes = tx.hash(false)
         const hash = toHex(hashBytes, false);
         this.logSigning('hash');
         this.logSigning(hash);
-        
-        //todo: repeat and verify transaction until it we created a transaction that is valid.
+
 
         let serializedTx = '';
         let i = 0;
 
-        var cardSig = await generateSignatureRaw(this, hashBytes, cardKeyIndex);
-        console.log('cardsig: ',cardSig);
+        const rsSig = await this.getRSSignatureFromHash(hash, cardKeyIndex);
+        tx.r = rsSig.r;
+        tx.s = rsSig.s;
+
+        
         do {
             if (i > 1) {
                 const failure = 'no valid transaction could be calculated.'
                 console.Error(failure);
                 throw failure;
             }
-
-            this.logSigning('tries to generate signature.');
-        
-            //const cardSig = await wrapper.generateSignature(1, hash.toString('hex'));
-            
-            this.logSigning('cardSig');
-            this.logSigning(cardSig);
-        
-            let rStart = 6;
-            let length = 2;
-            const rLength = parseInt(cardSig.slice(rStart, rStart + length), 16);
-            this.logSigning('rLength');
-            this.logSigning(rLength);
-            rStart += 2;
-            const r = cardSig.slice(rStart, rStart + rLength * 2);
-            this.logSigning('r');
-            this.logSigning(r);
-            console.assert(r.length == rLength * 2, 'r should be length ' + rLength * 2 + ' but has length ' + r.length);
-        
-            let sStart = rStart + rLength * 2 + 2;
-            const sLength = parseInt(cardSig.slice(sStart, sStart + length), 16);
-            this.logSigning('sLength');
-            this.logSigning(sLength);
-            
-            sStart += 2;
-            const s = cardSig.slice(sStart, sStart + sLength  * 2);
-            
-            this.logSigning('s');
-            this.logSigning(s);
-            console.assert(s.length == sLength * 2, 's should be length ' + sLength * 2 + ' but has length ' + s.length);
-            
-            tx.r = '0x' + r;
-            tx.s = '0x' + s;
-
 
 
 
@@ -366,18 +372,18 @@ class Security2GoCard {
 
             //this.logSigning('v');
             //this.logSigning(toHex(tx.v));
-            
+
             //console.log('v: ' + toHex(tx.v));
-        
+
             //const tx2 = new Tx(tx);
-            
+
             //console.log('v: ' + tx2.v);
             serializedTx = toHex(tx.serialize());
             this.logSigning('serializedTx');
             this.logSigning(serializedTx);
             //card.logSigning('tx2.v', toHex(tx2.v));
             //this.logSigning(web3.eth.accounts.recoverTransaction(toHex(serializedTx)));
-        
+
             i += 1;
             var txIsValid = false;
 
@@ -415,10 +421,12 @@ class Security2GoCard {
                 }
             }*/
 
-          } while (txIsValid == false);
+        } while (txIsValid == false);
 
-          this.logSigning('serialized transaction:' + serializedTx);
-          return tx;
+        this.logSigning('serialized transaction:' + serializedTx);
+        return tx;
+
+
     }
 
 
@@ -429,8 +437,8 @@ class Security2GoCard {
      * @throws {*} error from sendSignedTransaction
      * @return {receipt} the web3 receipt
      */
-    async signAndSendTransaction(web3, tx, cardKeyIndex = 1){
-        
+    async signAndSendTransaction(web3, tx, cardKeyIndex = 1) {
+
         const signature = await this.signTransaction(web3, tx, cardKeyIndex);
 
         console.log(`tx: ${JSON.stringify(tx, null, 2)}`);
