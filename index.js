@@ -7,6 +7,7 @@
 const web3utils = require('web3-utils');
 const util = require('util');
 const Tx = require('ethereumjs-tx');
+var utils = require('ethereumjs-util');
 
 function toHex(nonHex, prefix = true) {
     let temp = nonHex.toString('hex');
@@ -266,7 +267,7 @@ class Security2GoCard {
         return toHex(tx.serialize());;
     }
 
-    async getRSSignatureFromHash(hash, cardKeyIndex = 1) {
+    async getSignatureFromHash(hash, cardKeyIndex = 1) {
 
         let hashBytes;
 
@@ -279,7 +280,7 @@ class Security2GoCard {
             hashBytes = hash;
         }
 
-        console.log('hash:' + hash);
+        console.log('hash:' , hash);
 
         console.log('buffer: ' + hashBytes.length);
 
@@ -320,6 +321,26 @@ class Security2GoCard {
             s: '0x' + s
         }
 
+        const correctPublicKey = await this.getPublicKey(cardKeyIndex);
+        
+        
+        function isAddressMatching(testingVvalue){
+            const pubKey  = utils.ecrecover(hashBytes, testingVvalue, result.r, result.s);
+            
+            console.log('comparing public key');
+            console.log(pubKey);
+            console.log(correctPublicKey);
+            return correctPublicKey.equals(pubKey);
+        }
+
+        if (isAddressMatching('0x1b')) {
+            result.v = '0x1b';
+        } else if (isAddressMatching('0x1c')){
+            result.v = '0x1c';
+        } else {
+            throw 'unable to determine correct v value';
+        }
+
         return result;
     }
 
@@ -346,7 +367,7 @@ class Security2GoCard {
         let serializedTx = '';
         let i = 0;
 
-        const rsSig = await this.getRSSignatureFromHash(hash, cardKeyIndex);
+        const rsSig = await this.getSignatureFromHash(hash, cardKeyIndex);
         tx.r = rsSig.r;
         tx.s = rsSig.s;
 
