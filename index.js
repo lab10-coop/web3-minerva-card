@@ -370,83 +370,29 @@ class Security2GoCard {
         const rsSig = await this.getSignatureFromHash(hash, cardKeyIndex);
         tx.r = rsSig.r;
         tx.s = rsSig.s;
+        tx.v = rsSig.v;
 
-        
-        do {
-            if (i > 1) {
-                const failure = 'no valid transaction could be calculated.'
-                console.Error(failure);
-                throw failure;
-            }
-
-
-
-            //todo: learn more about "v"
-            if (i == 0) {
-                tx.v = '0x1b'
-            } else {
-                tx.v = '0x1c'
-            }
-
-            //console.log(`rStart: ${rStart}, rLength: ${rLength}, sStart: ${sStart}, sLength: ${sLength}`);
-            //console.log(`r: ${toHex(tx.r)}, s: ${toHex(tx.s)}, v: ${toHex(tx.v)}`);
-
-            //this.logSigning('v');
-            //this.logSigning(toHex(tx.v));
-
-            //console.log('v: ' + toHex(tx.v));
-
-            //const tx2 = new Tx(tx);
-
-            //console.log('v: ' + tx2.v);
-            serializedTx = toHex(tx.serialize());
-            this.logSigning('serializedTx');
-            this.logSigning(serializedTx);
-            //card.logSigning('tx2.v', toHex(tx2.v));
-            //this.logSigning(web3.eth.accounts.recoverTransaction(toHex(serializedTx)));
-
-            i += 1;
-            var txIsValid = false;
-
-            console.log(`tx: ${JSON.stringify(tx, null, 2)}`);
-            //console.log(i);
-            //try{
+        //console.log('v: ' + tx2.v);
+        serializedTx = toHex(tx.serialize());
+        this.logSigning('serializedTx');
+        this.logSigning(serializedTx);
+        //card.logSigning('tx2.v', toHex(tx2.v));
+        //this.logSigning(web3.eth.accounts.recoverTransaction(toHex(serializedTx)));
 
 
-            // if (rLength  != tx.r.length) {
-            //     console.error(`wrong R length - expecting this to fail rLength ${rLength} tx.r.length ${tx.r.length}`);
-            // }
+        this.logSigning(`tx: ${JSON.stringify(tx, null, 2)}`);
 
-            // if (sLength != tx.s.length) {
-            //     console.error(`wrong S length - expecting this to fail ${sLength} tx.s.length ${tx.s.length}`);
-            // }
 
-            txIsValid = web3.eth.accounts.recoverTransaction(serializedTx).toLocaleLowerCase() === address;
+        // if (rLength  != tx.r.length) {
+        //     console.error(`wrong R length - expecting this to fail rLength ${rLength} tx.r.length ${tx.r.length}`);
+        // }
 
-            /*} catch (error) {
-                console.error(`SigError detected: ${error}, i: ${i}`);
-                if (i == 0) {
-                    txIsValid = false;
-                }
-                else if (error == 'Error: The recovery param is more than two bits') {
-                    
-                    //i = 0;
-                    //cardSig = await generateSign
-            if (rLength * 2 + 2 != tx.r.length) {
-                console.error('wrong R length - expecting this to fail');
-            }atureRaw(this, hashBytes, cardKeyIndex);
-                    //console.error('Continue with new signature...');
-                    break;
-                } else {
-                    throw error;
-                }
-            }*/
-
-        } while (txIsValid == false);
+        // if (sLength != tx.s.length) {
+        //     console.error(`wrong S length - expecting this to fail ${sLength} tx.s.length ${tx.s.length}`);
+        // }
 
         this.logSigning('serialized transaction:' + serializedTx);
         return tx;
-
 
     }
 
