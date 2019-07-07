@@ -239,7 +239,7 @@ class Security2GoCard {
     /**
     * returns the (ethereum) address of the given index of the card.
     * for retrieving the raw public key call getPublicKey(keyIndex)
-    * @param {byte} keyIndex index (0..255) of the Security2Go Card.
+    * @param {byte} keyIndex index (0..255) of the Security2Go Card. defaults to 1 (first generated key on the card)
     * @return {string} public key
     */
     async getAddress(keyCardIndex = 0) {
@@ -258,7 +258,7 @@ class Security2GoCard {
     * Generates a signature for a given web3 style transaction
     * @param {Web3} web3 a Web3 instance.
     * @param {*} rawTransaction a Web3 style transaction.
-    * @param {byte} cardKeyIndex keyIndex index (0..255) of the Security2Go Card.
+    * @param {byte} cardKeyIndex keyIndex index (0..255) of the Security2Go Card. defaults to 1 (first generated key on the card)
     * @param {number} nonce optional nonce, if not supplied, the nonce is retrieved with a RPC call by the provided web3 object.
     */
     async signTransaction(web3, rawTransaction, cardKeyIndex = 1, nonce) {
@@ -267,6 +267,11 @@ class Security2GoCard {
         return toHex(tx.serialize());;
     }
 
+    /**
+    * Generates a ethereum compatible secp256k1 signature for the given hash
+    * @param {string} hash hex encoded hash string.
+    * @param {byte} cardKeyIndex keyIndex index (0..255) of the Security2Go Card. defaults to 1 (first generated key on the card)
+    */
     async getSignatureFromHash(hash, cardKeyIndex = 1) {
 
         let hashBytes;
@@ -280,9 +285,8 @@ class Security2GoCard {
             hashBytes = hash;
         }
 
-        console.log('hash:' , hash);
-
-        console.log('buffer: ' + hashBytes.length);
+        this.logSigning('hash:' + hash);
+        this.logSigning('buffer.length: ' + hashBytes.length);
 
         var cardSig = await generateSignatureRaw(this, hashBytes, cardKeyIndex);
 
@@ -327,9 +331,9 @@ class Security2GoCard {
         function isAddressMatching(testingVvalue){
             const pubKey  = utils.ecrecover(hashBytes, testingVvalue, result.r, result.s);
             
-            console.log('comparing public key');
-            console.log(pubKey);
-            console.log(correctPublicKey);
+            // console.log('comparing public key');
+            // console.log(pubKey);
+            // console.log(correctPublicKey);
             return correctPublicKey.equals(pubKey);
         }
 
@@ -344,6 +348,13 @@ class Security2GoCard {
         return result;
     }
 
+    /**
+    * Generates an EthereumTx transaction object that includes the signature as R,S,V components.
+    * @param {Web3} web3 a Web3 instance.
+    * @param {*} rawTransaction a Web3 style transaction.
+    * @param {byte} cardKeyIndex keyIndex index (0..255) of the Security2Go Card. defaults to 1 (first generated key on the card)
+    * @param {number} nonce optional nonce, if not supplied, the nonce is retrieved with a RPC call by the provided web3 object.
+    */
     async getSignedTransactionObject(web3, rawTransaction, cardKeyIndex = 1, nonce) {
 
         const address = await this.getAddress(cardKeyIndex);
@@ -408,7 +419,7 @@ class Security2GoCard {
 
         const signature = await this.signTransaction(web3, tx, cardKeyIndex);
 
-        console.log(`tx: ${JSON.stringify(tx, null, 2)}`);
+        logWeb3(`tx: ${JSON.stringify(tx, null, 2)}`);
 
         try {
             this.logWeb3('sending transaction');
