@@ -71,17 +71,22 @@ function getGenericErrorAsString(errorCode) {
     //that would make it easier to distinguish between generic and specific errors.
 
     if (errorCode[0] == 0x90 && errorCode[1] == 0)
-        return "Success";
+        return "Success"; //success is not an error. please check for success state before.
     if (errorCode[0] == 0x64)
         return "Operation failed (" + errorCode[1] + ")";
     if (errorCode[0] == 0x67 && errorCode[1] == 0)
         return "Wrong length";
+    if (errorCode[0] == 0x69) {
+        if (errorCode[1] == 0x82)
+            return "Global or key-specific signature counter exceeded"; 
+    }
     if (errorCode[0] == 0x6A) {
         if (errorCode[1] == 0x86)
             return "Incorrect parameters P1/P2";
         if (errorCode[1] == 0x88) //this is NOT documented as a "Generic Error" but for now it seems to be safe to thread it like this.
             return "Key slot with given index is not available";
     }
+    
 
 
     if (errorCode[0] == 0x6D && errorCode[1] == 0)
@@ -133,7 +138,9 @@ function sendCommand(card, bytes, receiveHandler = null) {
 
                             //asume all 2 byte results are errors ?!
                             if (data.length == 2 && isError(data)) {
-                                console.error('Received Data is Error received: ' + getGenericErrorAsString(data));
+                                const errorMsg = getGenericErrorAsString(data);
+                                console.error('Received Data is Error received: ' + errorMsg);
+                                throw errorMsg;
                             }
 
                             card.logSigning(receiveHandler);
@@ -419,7 +426,7 @@ class Security2GoCard {
 
         const signature = await this.signTransaction(web3, tx, cardKeyIndex);
 
-        logWeb3(`tx: ${JSON.stringify(tx, null, 2)}`);
+        this.logWeb3(`tx: ${JSON.stringify(tx, null, 2)}`);
 
         try {
             this.logWeb3('sending transaction');
