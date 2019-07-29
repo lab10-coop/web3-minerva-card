@@ -147,8 +147,6 @@ function sendCommand(card, bytes, receiveHandler = null) {
                 card.logSigning(err);
                 return [];
               }
-              card.logSigning('Data received', dataTransmit);
-
               // asume all 2 byte results are errors ?!
               if (dataTransmit.length === 2 && isError(dataTransmit)) {
                 const errorMsg = getGenericErrorAsString(dataTransmit);
@@ -308,10 +306,14 @@ class Security2GoCard {
     * @param {*} rawTransaction a Web3 style transaction.
     * @param {byte} cardKeyIndex keyIndex index (0..255) of the Security2Go Card.
     * defaults to 1 (first generated key on the card)
+    * @returns hex-serialized transaction object (use getSignedTransactionObject() to get the raw object)
     */
   async signTransaction(web3, rawTransaction, cardKeyIndex = 1) {
-    const tx = await this.getSignedTransactionObject(web3, rawTransaction, cardKeyIndex);
-    return toHex(tx.serialize());
+    // const tx = await this.getSignedTransactionObject(web3, rawTransaction, cardKeyIndex);
+    // return toHex(tx.serialize());
+
+    const tx = await this.getSignedTransaction(web3, rawTransaction, cardKeyIndex);
+    return tx.rawTransaction;
   }
 
   /**
@@ -392,71 +394,71 @@ class Security2GoCard {
     } else {
       throw Error('unable to determine correct v value');
     }
-
     return result;
   }
 
   /**
-    * Generates an EthereumTx transaction object that includes the signature as R,S,V components.
-    * @param {Web3} web3 a Web3 instance.
-    * @param {*} rawTransaction a Web3 style transaction.
-    * @param {byte} cardKeyIndex keyIndex index (0..255) of the Security2Go Card.
-    * defaults to 1 (first generated key on the card)
-    */
-  async getSignedTransactionObject(web3, rawTransaction, cardKeyIndex = 1) {
+   * @param {Web3} web3
+   * @param {object} rawTransaction web3 style transaction object
+   * @param {byte} cardKeyIndex
+   * @returns object with r,s,v,hash,rawTransaction. compatible with interface required by web3.
+   * compatible with transactionSigner.
+   */
+  async getSignedTransaction(web3, rawTransaction, cardKeyIndex = 1) {
     const address = await this.getAddress(cardKeyIndex);
     this.logSigning('address');
     this.logSigning(address);
 
-    console.log(`rawTransaction: ${JSON.stringify(rawTransaction)}`);
-
+    // console.log(`rawTransaction: ${JSON.stringify(rawTransaction)}`);
     const transaction = JSON.parse(JSON.stringify(rawTransaction));
 
     if (!transaction.nonce) {
-      transaction.nonce = await web3.eth.getTransactionCount(address);
+      transaction.nonce = web3.utils.toHex(await web3.eth.getTransactionCount(address));
     }
 
-    console.log(`tx: ${JSON.stringify(transaction)}`);
+    // todo: is it safe to not add the "from" addres ?
+    // maybe we should throw an error if "from" is not the signing card ?
+    // if (!transaction.from) {
+    //   transaction.from = address;
+    // }
+
+
+    // removed EIP-155 transaction for now
+    // since it caused invalid signatures.
+
+    transaction.chainId = undefined;
+
+    // console.log('transaction at signing state', transaction);
 
     const tx = new Tx(transaction);
 
+    const result = {
+      r: '0x',
+      s: '0x',
+      v: '0x',
+      messageHash: '0x',
+      rawTransaction: '0x',
+    };
+
     const hashBytes = tx.hash(false);
-    const hash = toHex(hashBytes, false);
+    result.messageHash = `0x${toHex(hashBytes, false)}`;
     this.logSigning('hash');
-    this.logSigning(hash);
+    this.logSigning(result.messageHash);
 
+    const rsSig = await this.getSignatureFromHash(result.messageHash, cardKeyIndex);
 
-    let serializedTx = '';
+    result.r = rsSig.r;
+    result.s = rsSig.s;
+    result.v = rsSig.v;
 
-
-    const rsSig = await this.getSignatureFromHash(hash, cardKeyIndex);
     tx.r = rsSig.r;
     tx.s = rsSig.s;
     tx.v = rsSig.v;
 
-    // console.log('v: ' + tx2.v);
-    serializedTx = toHex(tx.serialize());
-    this.logSigning('serializedTx');
-    this.logSigning(serializedTx);
-    // card.logSigning('tx2.v', toHex(tx2.v));
-    // this.logSigning(web3.eth.accounts.recoverTransaction(toHex(serializedTx)));
+    result.rawTransaction = toHex(tx.serialize());
 
-
-    this.logSigning(`tx: ${JSON.stringify(tx, null, 2)}`);
-
-
-    // if (rLength  != tx.r.length) {
-    //     console.error(`wrong R length - expecting this to fail rLength ${rLength} tx.r.length ${tx.r.length}`);
-    // }
-
-    // if (sLength != tx.s.length) {
-    //     console.error(`wrong S length - expecting this to fail ${sLength} tx.s.length ${tx.s.length}`);
-    // }
-
-    this.logSigning(`serialized transaction:${serializedTx}`);
-    return tx;
+    return result;
   }
-
 
   /**
      * @param {Web3} web3 a Web3 instance
@@ -505,6 +507,23 @@ class Security2GoCard {
   }
 }
 
+class MinervaCardSigner {
+  constructor() {
+    this.card = null;
+    this.cardKeyIndex = 1;
+    this.web3 = null;
+  }
+
+  async sign(rawTx) {
+    console.log('signing with MinervaCardSigner');
+    const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
+    console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
+    return signedTransaction;
+  }
+}
+
+
 module.exports = {
   Security2GoCard,
+  MinervaCardSigner,
 };
