@@ -4,13 +4,13 @@
 * @version 0.1
 */
 
-const web3utils = require('web3-utils');
-const util = require('util');
-const Tx = require('ethereumjs-tx');
-const utils = require('ethereumjs-util');
+const web3utils = require("web3-utils");
+const util = require("util");
+const Tx = require("ethereumjs-tx");
+const utils = require("ethereumjs-util");
 
 function toHex(nonHex, prefix = true) {
-  let temp = nonHex.toString('hex');
+  let temp = nonHex.toString("hex");
   if (prefix) {
     temp = `0x${temp}`;
   }
@@ -18,7 +18,7 @@ function toHex(nonHex, prefix = true) {
 }
 
 function toHexString(byteArray) {
-  let s = '0x';
+  let s = "0x";
   byteArray.forEach((byte) => {
     s += (`0${(byte & 0xFF).toString(16)}`).slice(-2);
   });
@@ -30,7 +30,6 @@ function isError(code) {
   return true;
 }
 
-
 /**
  *
  * @param {byte[]} errorCode byte array with the error information at position 0 and zero
@@ -41,22 +40,22 @@ function getGenericErrorAsString(errorCode) {
   // that would make it easier to distinguish between generic and specific errors.
 
   // success is not an error. please check for success state before.
-  if (errorCode[0] === 0x90 && errorCode[1] === 0) { return 'Success'; }
+  if (errorCode[0] === 0x90 && errorCode[1] === 0) { return "Success"; }
   if (errorCode[0] === 0x64) { return `Operation failed (${errorCode[1]})`; }
-  if (errorCode[0] === 0x67 && errorCode[1] === 0) { return 'Wrong length'; }
+  if (errorCode[0] === 0x67 && errorCode[1] === 0) { return "Wrong length"; }
   if (errorCode[0] === 0x69) {
-    if (errorCode[1] === 0x82) { return 'Global or key-specific signature counter exceeded'; }
+    if (errorCode[1] === 0x82) { return "Global or key-specific signature counter exceeded"; }
   }
   if (errorCode[0] === 0x6A) {
-    if (errorCode[1] === 0x86) { return 'Incorrect parameters P1/P2'; }
+    if (errorCode[1] === 0x86) { return "Incorrect parameters P1/P2"; }
     // this is NOT documented as a "Generic Error" but for now it seems to be safe to thread it like this.
-    if (errorCode[1] === 0x88) { return 'Key slot with given index is not available'; }
+    if (errorCode[1] === 0x88) { return "Key slot with given index is not available"; }
   }
   if (errorCode[0] === 0x6D && errorCode[1] === 0) {
-    return 'Instruction code is not supported or invalid or application has not selected with the SELECT APP command';
+    return "Instruction code is not supported or invalid or application has not selected with the SELECT APP command";
   }
-  if (errorCode[0] === 0x6E && errorCode[1] === 0) { return 'Class not supported'; }
-  if (errorCode[0] === 0x6F && errorCode[1] === 0) { return 'Unknown Error'; }
+  if (errorCode[0] === 0x6E && errorCode[1] === 0) { return "Class not supported"; }
+  if (errorCode[0] === 0x6F && errorCode[1] === 0) { return "Unknown Error"; }
 
   function InttoHex(d) {
     return (`0${Number(d).toString(16)}`).slice(-2).toUpperCase();
@@ -68,12 +67,12 @@ function getGenericErrorAsString(errorCode) {
 function parseSelectAppResponse(response) {
   const result = {
     pinActivationStatus: 0,
-    cardID: '',
-    versionStringRaw: '',
-    versionString: '',
-    successRaw: '',
+    cardID: "",
+    versionStringRaw: "",
+    versionString: "",
+    successRaw: "",
     success: true,
-    errorString: '',
+    errorString: "",
   };
 
   if (response.length === 2) {
@@ -85,7 +84,7 @@ function parseSelectAppResponse(response) {
     result.pinActivationStatus = pinActivationStatusByte;
     result.cardID = response.slice(1, 11);
     result.versionStringRaw = response.slice(11, 18);
-    result.versionString = result.versionStringRaw.toString('ascii');
+    result.versionString = result.versionStringRaw.toString("ascii");
 
     const responseSuccess = response.slice(19, 20);
 
@@ -118,7 +117,7 @@ function parseSelectAppResponse(response) {
 */
 function sendCommand(card, bytes, receiveHandler = null) {
   const maxResponseLength = 128;
-  card.logSigning('connecting...');
+  card.logSigning("connecting...");
   card.reader.connect({}, (errConnect, protocolConnnected) => {
     if (errConnect) {
       console.error(`Connecting Error:${errConnect}`);
@@ -133,7 +132,7 @@ function sendCommand(card, bytes, receiveHandler = null) {
       card.reader.transmit(
         Buffer.from(selectAppIncldingCommand), maxResponseLength, protocol,
         (errSelectAppTransmit, dataSelectAppTransmit) => {
-          card.logSigning('select App Completed');
+          card.logSigning("select App Completed");
           if (errSelectAppTransmit) {
             console.error(errSelectAppTransmit);
           } else {
@@ -143,7 +142,7 @@ function sendCommand(card, bytes, receiveHandler = null) {
             card.reader.transmit(Buffer.from(bytes), maxResponseLength, protocol, (err, dataTransmit) => {
               if (err) {
               // todo: interprate error here ?
-                card.logSigning('Error on transmitting');
+                card.logSigning("Error on transmitting");
                 card.logSigning(err);
                 return [];
               }
@@ -175,7 +174,6 @@ async function generateSignatureRaw(card, bytes, keyIndex) {
     // const { keyIndex } = args;
     // const { card } = args;
 
-
     if (bytes.length !== 32) {
       const error = `message to sign needs to be 32 byte long. got:${bytes.length}`;
       card.logSigning(error);
@@ -197,7 +195,7 @@ async function generateSignatureRaw(card, bytes, keyIndex) {
         card.logSigning(`Signing: Got Response: ${toHexString(sendCommandResponse)}`);
         if (sendCommandResponse[sendCommandResponse.length - 2] === 0x90
             && sendCommandResponse[sendCommandResponse.length - 1] === 0) {
-          card.logSigning('card Signature is a success!');
+          card.logSigning("card Signature is a success!");
           // todo:
           const resultBin = sendCommandResponse.slice(9, sendCommandResponse.length - 2);
           const result = web3utils.bytesToHex(resultBin);
@@ -239,20 +237,20 @@ class Security2GoCard {
     * index (0..255) of the Security2Go Card.  defaults to 1 (first generated key on the card)
     * @return {string} public key
     */
-  async getPublicKey(cardKeyIndex = 1) {
+  public async getPublicKey(cardKeyIndex = 1) {
     function getPublicKeyFunction(args, callback) {
       const { card } = args;
       sendCommand(card, args.command, (response) => {
         if (response.length === 2) {
           if (response[0] === 0x69) {
             if (response[1] === 82) {
-              card.logSigning('Maximal number of key import calls exceeded (Security status not satisfied)');
+              card.logSigning("Maximal number of key import calls exceeded (Security status not satisfied)");
             } else if (response[1] === 85) {
-              card.logSigning('Not authenticated with PIN (Condition of use not satisfied)');
+              card.logSigning("Not authenticated with PIN (Condition of use not satisfied)");
             }
           }
           if (response[0] === 0x6a && response[1] === 0x88) {
-            card.logSigning('Key slot with given index is not available');
+            card.logSigning("Key slot with given index is not available");
           }
         } else if (response.length === 75) {
           // var sec1EncodedPublicKey =  response.slice(8, 64);
@@ -271,9 +269,8 @@ class Security2GoCard {
     card.logSigning(`getting key #${cardKeyIndex}`);
     const command = [0x00, 0x16, cardKeyIndex, 0x00, 0x00];
 
-    card.logSigning('response');
+    card.logSigning("response");
     // card.logSigning(responseFunction);
-
 
     const func = util.promisify(getPublicKeyFunction);
 
@@ -288,17 +285,16 @@ class Security2GoCard {
     * @param {byte} keyIndex index (0..255) of the Security2Go Card. defaults to 1 (first generated key on the card)
     * @return {string} public key
     */
-  async getAddress(keyCardIndex = 1) {
+  public async getAddress(keyCardIndex = 1) {
     const publicKey = await this.getPublicKey(keyCardIndex);
     const publicKeyHex = web3utils.bytesToHex(publicKey);
-    this.logSigning('publicKeyHex:');
+    this.logSigning("publicKeyHex:");
     this.logSigning(publicKeyHex);
     const address = `0x${web3utils.sha3(publicKeyHex).slice(26)}`;
-    this.logSigning('address');
+    this.logSigning("address");
     this.logSigning(address);
     return address;
   }
-
 
   /**
     * Generates a signature for a given web3 style transaction
@@ -308,7 +304,7 @@ class Security2GoCard {
     * defaults to 1 (first generated key on the card)
     * @returns hex-serialized transaction object (use getSignedTransactionObject() to get the raw object)
     */
-  async signTransaction(web3, rawTransaction, cardKeyIndex = 1) {
+  public async signTransaction(web3, rawTransaction, cardKeyIndex = 1) {
     // const tx = await this.getSignedTransactionObject(web3, rawTransaction, cardKeyIndex);
     // return toHex(tx.serialize());
 
@@ -322,15 +318,15 @@ class Security2GoCard {
     * @param {byte} cardKeyIndex keyIndex index (0..255) of the Security2Go Card.
     * defaults to 1 (first generated key on the card)
     */
-  async getSignatureFromHash(hashString, cardKeyIndex = 1) {
+  public async getSignatureFromHash(hashString, cardKeyIndex = 1) {
     let hash = hashString;
     let hashBytes;
 
-    if (typeof hash === 'string') {
-      if (hash.startsWith('0x')) {
+    if (typeof hash === "string") {
+      if (hash.startsWith("0x")) {
         hash = hash.substring(2, hash.length);
       }
-      hashBytes = Buffer.from(hash, 'hex');
+      hashBytes = Buffer.from(hash, "hex");
     } else {
       hashBytes = hash;
     }
@@ -340,33 +336,33 @@ class Security2GoCard {
 
     const cardSig = await generateSignatureRaw(this, hashBytes, cardKeyIndex);
 
-    this.logSigning('tries to generate signature.');
+    this.logSigning("tries to generate signature.");
 
     // const cardSig = await wrapper.generateSignature(1, hash.toString('hex'));
 
-    this.logSigning('cardSig');
+    this.logSigning("cardSig");
     this.logSigning(cardSig);
 
     let rStart = 6;
     const length = 2;
     const rLength = parseInt(cardSig.slice(rStart, rStart + length), 16);
-    this.logSigning('rLength');
+    this.logSigning("rLength");
     this.logSigning(rLength);
     rStart += 2;
     const r = cardSig.slice(rStart, rStart + rLength * 2);
-    this.logSigning('r');
+    this.logSigning("r");
     this.logSigning(r);
     console.assert(r.length === rLength * 2, `r should be length ${rLength * 2} but has length ${r.length}`);
 
     let sStart = rStart + rLength * 2 + 2;
     const sLength = parseInt(cardSig.slice(sStart, sStart + length), 16);
-    this.logSigning('sLength');
+    this.logSigning("sLength");
     this.logSigning(sLength);
 
     sStart += 2;
     const s = cardSig.slice(sStart, sStart + sLength * 2);
 
-    this.logSigning('s');
+    this.logSigning("s");
     this.logSigning(s);
     console.assert(s.length === sLength * 2, `s should be length ${sLength * 2} but has length ${s.length}`);
 
@@ -377,7 +373,6 @@ class Security2GoCard {
 
     const correctPublicKey = await this.getPublicKey(cardKeyIndex);
 
-
     function isAddressMatching(testingVvalue) {
       const pubKey = utils.ecrecover(hashBytes, testingVvalue, result.r, result.s);
 
@@ -387,12 +382,12 @@ class Security2GoCard {
       return correctPublicKey.equals(pubKey);
     }
 
-    if (isAddressMatching('0x1b')) {
-      result.v = '0x1b';
-    } else if (isAddressMatching('0x1c')) {
-      result.v = '0x1c';
+    if (isAddressMatching("0x1b")) {
+      result.v = "0x1b";
+    } else if (isAddressMatching("0x1c")) {
+      result.v = "0x1c";
     } else {
-      throw Error('unable to determine correct v value');
+      throw Error("unable to determine correct v value");
     }
     return result;
   }
@@ -404,9 +399,9 @@ class Security2GoCard {
    * @returns object with r,s,v,hash,rawTransaction. compatible with interface required by web3.
    * compatible with transactionSigner.
    */
-  async getSignedTransaction(web3, rawTransaction, cardKeyIndex = 1) {
+  public async getSignedTransaction(web3, rawTransaction, cardKeyIndex = 1) {
     const address = await this.getAddress(cardKeyIndex);
-    this.logSigning('address');
+    this.logSigning("address");
     this.logSigning(address);
 
     // console.log(`rawTransaction: ${JSON.stringify(rawTransaction)}`);
@@ -422,7 +417,6 @@ class Security2GoCard {
     //   transaction.from = address;
     // }
 
-
     // removed EIP-155 transaction for now
     // since it caused invalid signatures.
 
@@ -433,16 +427,16 @@ class Security2GoCard {
     const tx = new Tx(transaction);
 
     const result = {
-      r: '0x',
-      s: '0x',
-      v: '0x',
-      messageHash: '0x',
-      rawTransaction: '0x',
+      r: "0x",
+      s: "0x",
+      v: "0x",
+      messageHash: "0x",
+      rawTransaction: "0x",
     };
 
     const hashBytes = tx.hash(false);
     result.messageHash = `0x${toHex(hashBytes, false)}`;
-    this.logSigning('hash');
+    this.logSigning("hash");
     this.logSigning(result.messageHash);
 
     const rsSig = await this.getSignatureFromHash(result.messageHash, cardKeyIndex);
@@ -467,13 +461,13 @@ class Security2GoCard {
      * @throws {*} error from sendSignedTransaction
      * @return {receipt} the web3 receipt
      */
-  async signAndSendTransaction(web3, tx, cardKeyIndex = 1) {
+  public async signAndSendTransaction(web3, tx, cardKeyIndex = 1) {
     const signature = await this.signTransaction(web3, tx, cardKeyIndex);
 
     this.logWeb3(`tx: ${JSON.stringify(tx, null, 2)}`);
 
     try {
-      this.logWeb3('sending transaction');
+      this.logWeb3("sending transaction");
       const txReceipt = await web3.eth.sendSignedTransaction(signature);
       this.logWeb3(`receipt: ${txReceipt}`);
       return txReceipt;
@@ -481,7 +475,7 @@ class Security2GoCard {
       // the following error occurs all the time.
       // Error: Transaction has been reverted by the EVM:
       // no idea why yet....
-      console.error('Error:', error);
+      console.error("Error:", error);
       throw error;
     }
   }
@@ -490,7 +484,7 @@ class Security2GoCard {
      * console.log() if log_debug_web3
      * @param {*} message
      */
-  logWeb3(message) {
+  public logWeb3(message) {
     if (this.log_debug_web3) {
       console.log(message);
     }
@@ -500,7 +494,7 @@ class Security2GoCard {
      * console.log() if log_debug_signing
      * @param {*} message
      */
-  logSigning(message) {
+  public logSigning(message) {
     if (this.log_debug_signing) {
       console.log(message);
     }
@@ -514,14 +508,13 @@ class MinervaCardSigner {
     this.web3 = null;
   }
 
-  async sign(rawTx) {
-    console.log('signing with MinervaCardSigner');
+  public async sign(rawTx) {
+    console.log("signing with MinervaCardSigner");
     const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
     console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
     return signedTransaction;
   }
 }
-
 
 module.exports = {
   Security2GoCard,
