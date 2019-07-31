@@ -1,7 +1,7 @@
 /**
 * @file Web3 Security2Go
 * @author Thomas Haller <thomas.haller@lab10.coop>
-* @version 0.1
+* @version 0.2
 */
 
 const web3utils = require("web3-utils");
@@ -9,7 +9,7 @@ const util = require("util");
 const Tx = require("ethereumjs-tx");
 const utils = require("ethereumjs-util");
 
-function toHex(nonHex, prefix = true) {
+function toHex(nonHex, prefix: boolean = true) {
   let temp = nonHex.toString("hex");
   if (prefix) {
     temp = `0x${temp}`;
@@ -17,7 +17,7 @@ function toHex(nonHex, prefix = true) {
   return temp;
 }
 
-function toHexString(byteArray) {
+function toHexString(byteArray: Buffer) {
   let s = "0x";
   byteArray.forEach((byte) => {
     s += (`0${(byte & 0xFF).toString(16)}`).slice(-2);
@@ -25,7 +25,7 @@ function toHexString(byteArray) {
   return s;
 }
 
-function isError(code) {
+function isError(code: Buffer) {
   if (code[0] === 0x90 && code[1] === 0) { return false; }
   return true;
 }
@@ -35,7 +35,7 @@ function isError(code) {
  * @param {byte[]} errorCode byte array with the error information at position 0 and zero
  * @returns {string} error message
  */
-function getGenericErrorAsString(errorCode) {
+function getGenericErrorAsString(errorCode: Buffer) {
   // todo: maybe thread the error codes in lookup tables ?
   // that would make it easier to distinguish between generic and specific errors.
 
@@ -57,18 +57,19 @@ function getGenericErrorAsString(errorCode) {
   if (errorCode[0] === 0x6E && errorCode[1] === 0) { return "Class not supported"; }
   if (errorCode[0] === 0x6F && errorCode[1] === 0) { return "Unknown Error"; }
 
-  function InttoHex(d) {
+  function InttoHex(d: number) {
     return (`0${Number(d).toString(16)}`).slice(-2).toUpperCase();
   }
 
   return `ErrorCode Unknown:${InttoHex(errorCode[0])} ${InttoHex(errorCode[1])}`;
 }
 
-function parseSelectAppResponse(response) {
+function parseSelectAppResponse(response: Buffer) {
   const result = {
+    cardID: Buffer,
     pinActivationStatus: 0,
-    cardID: "",
-    versionStringRaw: "",
+
+    versionStringRaw: Buffer,
     versionString: "",
     successRaw: "",
     success: true,
@@ -77,8 +78,7 @@ function parseSelectAppResponse(response) {
 
   if (response.length === 2) {
     result.success = false;
-    getGenericErrorAsString(response);
-    result.errorString();
+    result.errorString = getGenericErrorAsString(response);
   } else if (response.length === 20) {
     const pinActivationStatusByte = response[0];
     result.pinActivationStatus = pinActivationStatusByte;
@@ -115,7 +115,7 @@ function parseSelectAppResponse(response) {
 * @param {byte[]} bytes raw byte[] with the netto data.
 * @param {receiveHandler} callback once the operation is finished.
 */
-function sendCommand(card, bytes, receiveHandler = null) {
+function sendCommand(card: Security2GoCard, bytes: byte[], receiveHandler = null) {
   const maxResponseLength = 128;
   card.logSigning("connecting...");
   card.reader.connect({}, (errConnect, protocolConnnected) => {
@@ -141,7 +141,7 @@ function sendCommand(card, bytes, receiveHandler = null) {
             // todo: validate result.
             card.reader.transmit(Buffer.from(bytes), maxResponseLength, protocol, (err, dataTransmit) => {
               if (err) {
-              // todo: interprate error here ?
+                // todo: interprate error here ?
                 card.logSigning("Error on transmitting");
                 card.logSigning(err);
                 return [];
@@ -194,7 +194,7 @@ async function generateSignatureRaw(card, bytes, keyIndex) {
       if (sendCommandResponse) {
         card.logSigning(`Signing: Got Response: ${toHexString(sendCommandResponse)}`);
         if (sendCommandResponse[sendCommandResponse.length - 2] === 0x90
-            && sendCommandResponse[sendCommandResponse.length - 1] === 0) {
+          && sendCommandResponse[sendCommandResponse.length - 1] === 0) {
           card.logSigning("card Signature is a success!");
           // todo:
           const resultBin = sendCommandResponse.slice(9, sendCommandResponse.length - 2);
