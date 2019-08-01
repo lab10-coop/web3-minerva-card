@@ -8,7 +8,9 @@ const web3utils = require("web3-utils");
 const util = require("util");
 const Tx = require("ethereumjs-tx");
 const utils = require("ethereumjs-util");
-const pcsclite = require("pcsclite");
+//const pcsclite = require("pcsclite");
+
+import { pcsc } from 'pcsclite';
 
 function toHex(nonHex: Buffer, prefix: boolean = true) {
   let temp = nonHex.toString("hex");
@@ -118,13 +120,13 @@ function parseSelectAppResponse(response: Buffer) {
 * sends the always required SelectApp command in advance.
 *
 * @param {Security2GoCard} card object
-* @param {byte[]} bytes raw byte[] with the netto data.
+* @param {number[]} bytes raw byte[] with the netto data.
 * @param {receiveHandler} callback once the operation is finished.
 */
-function sendCommand(card: Security2GoCard, bytes: byte[], receiveHandler = null) {
+function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = null) {
   const maxResponseLength = 128;
   card.logSigning("connecting...");
-  card.reader.connect({}, (errConnect, protocolConnnected) => {
+  card.reader.connect({}, (errConnect: any, protocolConnnected) => {
     if (errConnect) {
       console.error(`Connecting Error:${errConnect}`);
     } else {
@@ -222,13 +224,13 @@ async function generateSignatureRaw(card, bytes, keyIndex) {
 }
 
 class Security2GoCard {
-
-  reader : pcsclite.CardReader;
+           
+  reader : pcsc.CardReader;
 
   /**
      * Represents an Infinion Security2Go played on a card reader using the pcsclite framework.
      *
-     * @param {pcsclite.CardReader} reader a CardReader from pcsclite.
+     * @param {pcsc.CardReader} reader a CardReader from pcsclite.
      */
   constructor(reader) {
     this.reader = reader;
