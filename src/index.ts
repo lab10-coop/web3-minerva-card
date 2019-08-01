@@ -8,8 +8,9 @@ const web3utils = require("web3-utils");
 const util = require("util");
 const Tx = require("ethereumjs-tx");
 const utils = require("ethereumjs-util");
+const pcsclite = require("pcsclite");
 
-function toHex(nonHex, prefix: boolean = true) {
+function toHex(nonHex: Buffer, prefix: boolean = true) {
   let temp = nonHex.toString("hex");
   if (prefix) {
     temp = `0x${temp}`;
@@ -64,17 +65,22 @@ function getGenericErrorAsString(errorCode: Buffer) {
   return `ErrorCode Unknown:${InttoHex(errorCode[0])} ${InttoHex(errorCode[1])}`;
 }
 
-function parseSelectAppResponse(response: Buffer) {
-  const result = {
-    cardID: Buffer,
-    pinActivationStatus: 0,
+class ParseSelectAppResponseResult {
+  public cardID?: Buffer;
+  public pinActivationStatus?: number;
+  public versionStringRaw?: Buffer;
+  public versionString?: string;
+  public successRaw?: Buffer;
+  public success?: boolean;
+  public errorString?: string;
 
-    versionStringRaw: Buffer,
-    versionString: "",
-    successRaw: "",
-    success: true,
-    errorString: "",
-  };
+
+  constructor (){
+  }
+}
+
+function parseSelectAppResponse(response: Buffer) {
+  const result = new ParseSelectAppResponseResult();
 
   if (response.length === 2) {
     result.success = false;
@@ -216,6 +222,9 @@ async function generateSignatureRaw(card, bytes, keyIndex) {
 }
 
 class Security2GoCard {
+
+  reader : pcsclite.CardReader;
+
   /**
      * Represents an Infinion Security2Go played on a card reader using the pcsclite framework.
      *

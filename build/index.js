@@ -2,7 +2,7 @@
 /**
 * @file Web3 Security2Go
 * @author Thomas Haller <thomas.haller@lab10.coop>
-* @version 0.1
+* @version 0.2
 */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43,6 +43,7 @@ var web3utils = require("web3-utils");
 var util = require("util");
 var Tx = require("ethereumjs-tx");
 var utils = require("ethereumjs-util");
+var pcsclite = require("pcsclite");
 function toHex(nonHex, prefix) {
     if (prefix === void 0) { prefix = true; }
     var temp = nonHex.toString("hex");
@@ -112,9 +113,9 @@ function getGenericErrorAsString(errorCode) {
 }
 function parseSelectAppResponse(response) {
     var result = {
+        cardID: Buffer,
         pinActivationStatus: 0,
-        cardID: "",
-        versionStringRaw: "",
+        versionStringRaw: Buffer,
         versionString: "",
         successRaw: "",
         success: true,
@@ -122,8 +123,7 @@ function parseSelectAppResponse(response) {
     };
     if (response.length === 2) {
         result.success = false;
-        getGenericErrorAsString(response);
-        result.errorString();
+        result.errorString = getGenericErrorAsString(response);
     }
     else if (response.length === 20) {
         var pinActivationStatusByte = response[0];
