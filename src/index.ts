@@ -126,7 +126,7 @@ function parseSelectAppResponse(response: Buffer) {
 function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = null) {
   const maxResponseLength = 128;
   card.logSigning("connecting...");
-  card.reader.connect({}, (errConnect: any, protocolConnnected) => {
+  card.reader.connect({},(errConnect: pcsc.AnyOrNothing, protocolConnnected: number) => {
     if (errConnect) {
       console.error(`Connecting Error:${errConnect}`);
     } else {
@@ -137,9 +137,10 @@ function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = nu
       card.logSigning(`protocol:${protocol}`);
       const selectAppIncldingCommand = [0x00, 0xA4, 0x04, 0x00, 0x0D, /* start of body */
         0xD2, 0x76, 0x00, 0x00, 0x04, 0x15, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01 /* end of body */, 12];
+
       card.reader.transmit(
         Buffer.from(selectAppIncldingCommand), maxResponseLength, protocol,
-        (errSelectAppTransmit, dataSelectAppTransmit) => {
+        (errSelectAppTransmit: pcsc.AnyOrNothing, dataSelectAppTransmit: Buffer) => {
           card.logSigning("select App Completed");
           if (errSelectAppTransmit) {
             console.error(errSelectAppTransmit);
@@ -147,7 +148,7 @@ function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = nu
             const selectAppResponse = parseSelectAppResponse(dataSelectAppTransmit);
             card.logSigning(`SelectApp result: ${JSON.stringify(selectAppResponse)} `);
             // todo: validate result.
-            card.reader.transmit(Buffer.from(bytes), maxResponseLength, protocol, (err, dataTransmit) => {
+            card.reader.transmit(Buffer.from(bytes), maxResponseLength, protocol, (err: pcsc.AnyOrNothing, dataTransmit: Buffer) => {
               if (err) {
                 // todo: interprate error here ?
                 card.logSigning("Error on transmitting");
@@ -161,7 +162,6 @@ function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = nu
                 throw errorMsg;
               }
 
-              card.logSigning(receiveHandler);
               // reader.close();
               // pcsc.close();
               if (receiveHandler != null) {
@@ -225,14 +225,17 @@ async function generateSignatureRaw(card, bytes, keyIndex) {
 
 class Security2GoCard {
            
-  reader : pcsc.CardReader;
+  public reader : pcsc.CardReader;
+  public PROTOCOL_ID: number;
+  public log_debug_signing: boolean;
+  public log_debug_web3: boolean;
 
   /**
      * Represents an Infinion Security2Go played on a card reader using the pcsclite framework.
      *
      * @param {pcsc.CardReader} reader a CardReader from pcsclite.
      */
-  constructor(reader) {
+  constructor(reader: pcsc.CardReader) {
     this.reader = reader;
     // todo: in our case protocol was allways 2. sometimes reader.connect() delievers a protocol number, sometimes not
     // this is a very uncool workaround for this problem.
