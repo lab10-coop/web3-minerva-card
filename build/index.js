@@ -39,21 +39,38 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var web3utils = require("web3-utils");
-var util = require("util");
-var Tx = require("ethereumjs-tx");
-var utils = require("ethereumjs-util");
-var pcsclite = require("pcsclite");
+Object.defineProperty(exports, "__esModule", { value: true });
+var web3utils = require('web3-utils');
+var util = require('util');
+var Tx = require('ethereumjs-tx');
+var utils = require('ethereumjs-util');
+// import { pcsc } from 'pcsclite';
+// import pcsclite from 'pcsclite';
+// import { default as pcsc } from 'pcsclite';
+// import { default as pcsc } from 'pcsclite';
+// import {} from 'pcsclite';
+// import * as pcsc from 'pcsclite';
+// let x :pcsc.AnyOrNothing;
+// let y :pcsclite.AnyOrNothing;
+// x = 7;
+// y = 8;
 function toHex(nonHex, prefix) {
     if (prefix === void 0) { prefix = true; }
-    var temp = nonHex.toString("hex");
+    var temp = nonHex.toString('hex');
     if (prefix) {
         temp = "0x" + temp;
     }
     return temp;
 }
 function toHexString(byteArray) {
-    var s = "0x";
+    var s = '0x';
+    byteArray.forEach(function (byte) {
+        s += ("0" + (byte & 0xFF).toString(16)).slice(-2);
+    });
+    return s;
+}
+function int8ArraytoHexString(byteArray) {
+    var s = '0x';
     byteArray.forEach(function (byte) {
         s += ("0" + (byte & 0xFF).toString(16)).slice(-2);
     });
@@ -75,52 +92,49 @@ function getGenericErrorAsString(errorCode) {
     // that would make it easier to distinguish between generic and specific errors.
     // success is not an error. please check for success state before.
     if (errorCode[0] === 0x90 && errorCode[1] === 0) {
-        return "Success";
+        return 'Success';
     }
     if (errorCode[0] === 0x64) {
         return "Operation failed (" + errorCode[1] + ")";
     }
     if (errorCode[0] === 0x67 && errorCode[1] === 0) {
-        return "Wrong length";
+        return 'Wrong length';
     }
     if (errorCode[0] === 0x69) {
         if (errorCode[1] === 0x82) {
-            return "Global or key-specific signature counter exceeded";
+            return 'Global or key-specific signature counter exceeded';
         }
     }
     if (errorCode[0] === 0x6A) {
         if (errorCode[1] === 0x86) {
-            return "Incorrect parameters P1/P2";
+            return 'Incorrect parameters P1/P2';
         }
         // this is NOT documented as a "Generic Error" but for now it seems to be safe to thread it like this.
         if (errorCode[1] === 0x88) {
-            return "Key slot with given index is not available";
+            return 'Key slot with given index is not available';
         }
     }
     if (errorCode[0] === 0x6D && errorCode[1] === 0) {
-        return "Instruction code is not supported or invalid or application has not selected with the SELECT APP command";
+        return 'Instruction code is not supported or invalid or application has not selected with the SELECT APP command';
     }
     if (errorCode[0] === 0x6E && errorCode[1] === 0) {
-        return "Class not supported";
+        return 'Class not supported';
     }
     if (errorCode[0] === 0x6F && errorCode[1] === 0) {
-        return "Unknown Error";
+        return 'Unknown Error';
     }
-    function InttoHex(d) {
+    function inttoHex(d) {
         return ("0" + Number(d).toString(16)).slice(-2).toUpperCase();
     }
-    return "ErrorCode Unknown:" + InttoHex(errorCode[0]) + " " + InttoHex(errorCode[1]);
+    return "ErrorCode Unknown:" + inttoHex(errorCode[0]) + " " + inttoHex(errorCode[1]);
 }
+var ParseSelectAppResponseResult = /** @class */ (function () {
+    function ParseSelectAppResponseResult() {
+    }
+    return ParseSelectAppResponseResult;
+}());
 function parseSelectAppResponse(response) {
-    var result = {
-        cardID: Buffer,
-        pinActivationStatus: 0,
-        versionStringRaw: Buffer,
-        versionString: "",
-        successRaw: "",
-        success: true,
-        errorString: "",
-    };
+    var result = new ParseSelectAppResponseResult();
     if (response.length === 2) {
         result.success = false;
         result.errorString = getGenericErrorAsString(response);
@@ -130,7 +144,7 @@ function parseSelectAppResponse(response) {
         result.pinActivationStatus = pinActivationStatusByte;
         result.cardID = response.slice(1, 11);
         result.versionStringRaw = response.slice(11, 18);
-        result.versionString = result.versionStringRaw.toString("ascii");
+        result.versionString = result.versionStringRaw.toString('ascii');
         var responseSuccess = response.slice(19, 20);
         if (responseSuccess[0] === 0x90 && responseSuccess[1] === 0x0) {
             result.success = true;
@@ -157,13 +171,13 @@ function parseSelectAppResponse(response) {
 * sends the always required SelectApp command in advance.
 *
 * @param {Security2GoCard} card object
-* @param {byte[]} bytes raw byte[] with the netto data.
+* @param {number[]} bytes raw byte[] with the netto data.
 * @param {receiveHandler} callback once the operation is finished.
 */
 function sendCommand(card, bytes, receiveHandler) {
-    if (receiveHandler === void 0) { receiveHandler = null; }
+    if (receiveHandler === void 0) { receiveHandler = function (buffer, error) { return; }; }
     var maxResponseLength = 128;
-    card.logSigning("connecting...");
+    card.logSigning('connecting...');
     card.reader.connect({}, function (errConnect, protocolConnnected) {
         if (errConnect) {
             console.error("Connecting Error:" + errConnect);
@@ -177,7 +191,7 @@ function sendCommand(card, bytes, receiveHandler) {
             var selectAppIncldingCommand = [0x00, 0xA4, 0x04, 0x00, 0x0D,
                 0xD2, 0x76, 0x00, 0x00, 0x04, 0x15, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01 /* end of body */, 12];
             card.reader.transmit(Buffer.from(selectAppIncldingCommand), maxResponseLength, protocol_1, function (errSelectAppTransmit, dataSelectAppTransmit) {
-                card.logSigning("select App Completed");
+                card.logSigning('select App Completed');
                 if (errSelectAppTransmit) {
                     console.error(errSelectAppTransmit);
                 }
@@ -188,7 +202,7 @@ function sendCommand(card, bytes, receiveHandler) {
                     card.reader.transmit(Buffer.from(bytes), maxResponseLength, protocol_1, function (err, dataTransmit) {
                         if (err) {
                             // todo: interprate error here ?
-                            card.logSigning("Error on transmitting");
+                            card.logSigning('Error on transmitting');
                             card.logSigning(err);
                             return [];
                         }
@@ -198,12 +212,9 @@ function sendCommand(card, bytes, receiveHandler) {
                             console.error("Received Data is Error received: " + errorMsg);
                             throw errorMsg;
                         }
-                        card.logSigning(receiveHandler);
                         // reader.close();
                         // pcsc.close();
-                        if (receiveHandler != null) {
-                            receiveHandler(dataTransmit);
-                        }
+                        receiveHandler(dataTransmit, undefined);
                         return true;
                     });
                 }
@@ -223,30 +234,30 @@ function generateSignatureRaw(card, bytes, keyIndex) {
                 throw error;
             }
             var messageBuffer = new ArrayBuffer(38);
-            var messageBufferView = new Int8Array(messageBuffer);
+            var messageBufferView = new Uint8Array(messageBuffer);
             messageBufferView[1] = 0x18;
             messageBufferView[2] = keyIndex;
             messageBufferView[3] = 0x00;
             messageBufferView[4] = 0x20;
             messageBufferView.set(bytes, 5);
-            card.logSigning("signing: " + toHexString(messageBufferView));
-            sendCommand(card, messageBuffer, function (sendCommandResponse, error) {
+            card.logSigning("signing: " + int8ArraytoHexString(messageBufferView));
+            sendCommand(card, messageBufferView, function (sendCommandResponse, error) {
                 if (sendCommandResponse) {
                     card.logSigning("Signing: Got Response: " + toHexString(sendCommandResponse));
                     if (sendCommandResponse[sendCommandResponse.length - 2] === 0x90
                         && sendCommandResponse[sendCommandResponse.length - 1] === 0) {
-                        card.logSigning("card Signature is a success!");
+                        card.logSigning('card Signature is a success!');
                         // todo:
                         var resultBin = sendCommandResponse.slice(9, sendCommandResponse.length - 2);
                         var result = web3utils.bytesToHex(resultBin);
-                        callback(null, result);
+                        callback(undefined, result);
                         return;
                     }
                     console.error("Signing: not implmented signing response:" + toHexString(sendCommandResponse));
                 }
                 if (error) {
                     console.error("Signing Error: " + error);
-                    callback(error, null);
+                    callback(error, undefined);
                 }
             });
         }
@@ -261,7 +272,7 @@ var Security2GoCard = /** @class */ (function () {
     /**
        * Represents an Infinion Security2Go played on a card reader using the pcsclite framework.
        *
-       * @param {pcsclite.CardReader} reader a CardReader from pcsclite.
+       * @param {pcsc.CardReader} reader a CardReader from pcsclite.
        */
     function Security2GoCard(reader) {
         this.reader = reader;
@@ -287,14 +298,14 @@ var Security2GoCard = /** @class */ (function () {
                     if (response.length === 2) {
                         if (response[0] === 0x69) {
                             if (response[1] === 82) {
-                                card.logSigning("Maximal number of key import calls exceeded (Security status not satisfied)");
+                                card.logSigning('Maximal number of key import calls exceeded (Security status not satisfied)');
                             }
                             else if (response[1] === 85) {
-                                card.logSigning("Not authenticated with PIN (Condition of use not satisfied)");
+                                card.logSigning('Not authenticated with PIN (Condition of use not satisfied)');
                             }
                         }
                         if (response[0] === 0x6a && response[1] === 0x88) {
-                            card.logSigning("Key slot with given index is not available");
+                            card.logSigning('Key slot with given index is not available');
                         }
                     }
                     else if (response.length === 75) {
@@ -316,7 +327,7 @@ var Security2GoCard = /** @class */ (function () {
                 card = this;
                 card.logSigning("getting key #" + cardKeyIndex);
                 command = [0x00, 0x16, cardKeyIndex, 0x00, 0x00];
-                card.logSigning("response");
+                card.logSigning('response');
                 func = util.promisify(getPublicKeyFunction);
                 return [2 /*return*/, func({ card: this, command: command })];
             });
@@ -338,10 +349,10 @@ var Security2GoCard = /** @class */ (function () {
                     case 1:
                         publicKey = _a.sent();
                         publicKeyHex = web3utils.bytesToHex(publicKey);
-                        this.logSigning("publicKeyHex:");
+                        this.logSigning('publicKeyHex:');
                         this.logSigning(publicKeyHex);
                         address = "0x" + web3utils.sha3(publicKeyHex).slice(26);
-                        this.logSigning("address");
+                        this.logSigning('address');
                         this.logSigning(address);
                         return [2 /*return*/, address];
                 }
@@ -391,11 +402,11 @@ var Security2GoCard = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         hash = hashString;
-                        if (typeof hash === "string") {
-                            if (hash.startsWith("0x")) {
+                        if (typeof hash === 'string') {
+                            if (hash.startsWith('0x')) {
                                 hash = hash.substring(2, hash.length);
                             }
-                            hashBytes = Buffer.from(hash, "hex");
+                            hashBytes = Buffer.from(hash, 'hex');
                         }
                         else {
                             hashBytes = hash;
@@ -405,27 +416,27 @@ var Security2GoCard = /** @class */ (function () {
                         return [4 /*yield*/, generateSignatureRaw(this, hashBytes, cardKeyIndex)];
                     case 1:
                         cardSig = _a.sent();
-                        this.logSigning("tries to generate signature.");
+                        this.logSigning('tries to generate signature.');
                         // const cardSig = await wrapper.generateSignature(1, hash.toString('hex'));
-                        this.logSigning("cardSig");
+                        this.logSigning('cardSig');
                         this.logSigning(cardSig);
                         rStart = 6;
                         length = 2;
                         rLength = parseInt(cardSig.slice(rStart, rStart + length), 16);
-                        this.logSigning("rLength");
+                        this.logSigning('rLength');
                         this.logSigning(rLength);
                         rStart += 2;
                         r = cardSig.slice(rStart, rStart + rLength * 2);
-                        this.logSigning("r");
+                        this.logSigning('r');
                         this.logSigning(r);
                         console.assert(r.length === rLength * 2, "r should be length " + rLength * 2 + " but has length " + r.length);
                         sStart = rStart + rLength * 2 + 2;
                         sLength = parseInt(cardSig.slice(sStart, sStart + length), 16);
-                        this.logSigning("sLength");
+                        this.logSigning('sLength');
                         this.logSigning(sLength);
                         sStart += 2;
                         s = cardSig.slice(sStart, sStart + sLength * 2);
-                        this.logSigning("s");
+                        this.logSigning('s');
                         this.logSigning(s);
                         console.assert(s.length === sLength * 2, "s should be length " + sLength * 2 + " but has length " + s.length);
                         result = {
@@ -435,14 +446,14 @@ var Security2GoCard = /** @class */ (function () {
                         return [4 /*yield*/, this.getPublicKey(cardKeyIndex)];
                     case 2:
                         correctPublicKey = _a.sent();
-                        if (isAddressMatching("0x1b")) {
-                            result.v = "0x1b";
+                        if (isAddressMatching('0x1b')) {
+                            result.v = '0x1b';
                         }
-                        else if (isAddressMatching("0x1c")) {
-                            result.v = "0x1c";
+                        else if (isAddressMatching('0x1c')) {
+                            result.v = '0x1c';
                         }
                         else {
-                            throw Error("unable to determine correct v value");
+                            throw Error('unable to determine correct v value');
                         }
                         return [2 /*return*/, result];
                 }
@@ -465,7 +476,7 @@ var Security2GoCard = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.getAddress(cardKeyIndex)];
                     case 1:
                         address = _d.sent();
-                        this.logSigning("address");
+                        this.logSigning('address');
                         this.logSigning(address);
                         transaction = JSON.parse(JSON.stringify(rawTransaction));
                         if (!!transaction.nonce) return [3 /*break*/, 3];
@@ -486,15 +497,15 @@ var Security2GoCard = /** @class */ (function () {
                         transaction.chainId = undefined;
                         tx = new Tx(transaction);
                         result = {
-                            r: "0x",
-                            s: "0x",
-                            v: "0x",
-                            messageHash: "0x",
-                            rawTransaction: "0x",
+                            r: '0x',
+                            s: '0x',
+                            v: '0x',
+                            messageHash: '0x',
+                            rawTransaction: '0x',
                         };
                         hashBytes = tx.hash(false);
                         result.messageHash = "0x" + toHex(hashBytes, false);
-                        this.logSigning("hash");
+                        this.logSigning('hash');
                         this.logSigning(result.messageHash);
                         return [4 /*yield*/, this.getSignatureFromHash(result.messageHash, cardKeyIndex)];
                     case 4:
@@ -531,7 +542,7 @@ var Security2GoCard = /** @class */ (function () {
                         _a.label = 2;
                     case 2:
                         _a.trys.push([2, 4, , 5]);
-                        this.logWeb3("sending transaction");
+                        this.logWeb3('sending transaction');
                         return [4 /*yield*/, web3.eth.sendSignedTransaction(signature)];
                     case 3:
                         txReceipt = _a.sent();
@@ -542,7 +553,7 @@ var Security2GoCard = /** @class */ (function () {
                         // the following error occurs all the time.
                         // Error: Transaction has been reverted by the EVM:
                         // no idea why yet....
-                        console.error("Error:", error_1);
+                        console.error('Error:', error_1);
                         throw error_1;
                     case 5: return [2 /*return*/];
                 }
@@ -581,7 +592,7 @@ var MinervaCardSigner = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        console.log("signing with MinervaCardSigner");
+                        console.log('signing with MinervaCardSigner');
                         return [4 /*yield*/, this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex)];
                     case 1:
                         signedTransaction = _a.sent();

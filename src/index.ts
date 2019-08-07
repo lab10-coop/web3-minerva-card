@@ -144,8 +144,8 @@ function parseSelectAppResponse(response: Buffer) {
 * @param {number[]} bytes raw byte[] with the netto data.
 * @param {receiveHandler} callback once the operation is finished.
 */
-function sendCommand(card: Security2GoCard, bytes: number[],  receiveHandler:
-  (buffer: Buffer) => void = (buffer: Buffer) => { return; }) {
+function sendCommand(card: Security2GoCard, bytes: Uint8Array,  receiveHandler:
+  (buffer?: Buffer, error?: Error) => void = (buffer?: Buffer, error?: Error) => { return; }) {
   const maxResponseLength = 128;
   card.logSigning('connecting...');
   card.reader.connect({}, (errConnect: pcsc.AnyOrNothing, protocolConnnected: number) => {
@@ -189,7 +189,7 @@ function sendCommand(card: Security2GoCard, bytes: number[],  receiveHandler:
                 // reader.close();
                 // pcsc.close();
 
-                receiveHandler(dataTransmit);
+                receiveHandler(dataTransmit, undefined);
 
                 return true;
               });
@@ -201,7 +201,7 @@ function sendCommand(card: Security2GoCard, bytes: number[],  receiveHandler:
 }
 
 async function generateSignatureRaw(card: Security2GoCard, bytes: number[], keyIndex: number) {
-  function generateSignatureRawFunction(args: any, callback: (error: Error, result: string) => void) {
+  function generateSignatureRawFunction(args: any, callback: (error?: Error, result?: string) => void) {
     // const { bytes } = args;
     // const { keyIndex } = args;
     // const { card } = args;
@@ -223,7 +223,7 @@ async function generateSignatureRaw(card: Security2GoCard, bytes: number[], keyI
 
     card.logSigning(`signing: ${int8ArraytoHexString(messageBufferView)}`);
 
-    sendCommand(card, messageBuffer, (sendCommandResponse, error) => {
+    sendCommand(card, messageBufferView, (sendCommandResponse, error) => {
       if (sendCommandResponse) {
         card.logSigning(`Signing: Got Response: ${toHexString(sendCommandResponse)}`);
         if (sendCommandResponse[sendCommandResponse.length - 2] === 0x90
@@ -232,14 +232,14 @@ async function generateSignatureRaw(card: Security2GoCard, bytes: number[], keyI
           // todo:
           const resultBin = sendCommandResponse.slice(9, sendCommandResponse.length - 2);
           const result: string = web3utils.bytesToHex(resultBin);
-          callback(null, result);
+          callback(undefined, result);
           return;
         }
         console.error(`Signing: not implmented signing response:${toHexString(sendCommandResponse)}`);
       }
       if (error) {
         console.error(`Signing Error: ${error}`);
-        callback(error, null);
+        callback(error, undefined);
       }
     });
   }
@@ -277,10 +277,10 @@ class Security2GoCard {
     * @return {string} public key
     */
   public async getPublicKey(cardKeyIndex = 1) {
-    function getPublicKeyFunction(args, callback) {
+    function getPublicKeyFunction(args: any, callback : any) {
       const { card } = args;
       sendCommand(card, args.command, (response) => {
-        if (response.length === 2) {
+        if (response && response.length === 2) {
           if (response[0] === 0x69) {
             if (response[1] === 82) {
               card.logSigning('Maximal number of key import calls exceeded (Security status not satisfied)');
@@ -291,7 +291,7 @@ class Security2GoCard {
           if (response[0] === 0x6a && response[1] === 0x88) {
             card.logSigning('Key slot with given index is not available');
           }
-        } else if (response.length === 75) {
+        } else if (response && response.length === 75) {
           // var sec1EncodedPublicKey =  response.slice(8, 64);
           // card.logSigning('response: ' + response);
           card.logSigning(`result_code: ${response[73]} ${response[74]}`);
@@ -300,20 +300,24 @@ class Security2GoCard {
           // var bufferHex = toHexString(buffer);
           callback(null, buffer);
         } else {
-          card.logSigning(`Unknown response: length: ${response.length} - ${response}`);
+          if (response) {
+            card.logSigning(`Unknown response: length: ${response.length} - ${response}`);
+          } else {
+            card.logSigning('dit not get a response');
+          }
         }
       });
     }
-    const card = this;
-    card.logSigning(`getting key #${cardKeyIndex}`);
+
+    this.logSigning(`getting key #${cardKeyIndex}`);
     const command = [0x00, 0x16, cardKeyIndex, 0x00, 0x00];
 
-    card.logSigning('response');
+    this.logSigning('response');
     // card.logSigning(responseFunction);
 
     const func = util.promisify(getPublicKeyFunction);
 
-    return func({ card: this, command });
+    return func({ command, card: this  });
     // card.logSigning(responseFunction);
     // return new Promise(resolve => {});
   }
