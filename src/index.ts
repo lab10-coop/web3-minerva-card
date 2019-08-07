@@ -8,9 +8,22 @@ const web3utils = require('web3-utils');
 const util = require('util');
 const Tx = require('ethereumjs-tx');
 const utils = require('ethereumjs-util');
-// const pcsclite = require("pcsclite");
+
+// const { pcsc } = require('pcsclite');
 
 import { pcsc } from 'pcsclite';
+// import { pcsc } from 'pcsclite';
+// import pcsclite from 'pcsclite';
+// import { default as pcsc } from 'pcsclite';
+// import { default as pcsc } from 'pcsclite';
+// import {} from 'pcsclite';
+// import * as pcsc from 'pcsclite';
+
+// let x :pcsc.AnyOrNothing;
+// let y :pcsclite.AnyOrNothing;
+
+// x = 7;
+// y = 8;
 
 function toHex(nonHex: Buffer, prefix: boolean = true) {
 
@@ -22,6 +35,14 @@ function toHex(nonHex: Buffer, prefix: boolean = true) {
 }
 
 function toHexString(byteArray: Buffer) {
+  let s = '0x';
+  byteArray.forEach((byte) => {
+    s += (`0${(byte & 0xFF).toString(16)}`).slice(-2);
+  });
+  return s;
+}
+
+function int8ArraytoHexString(byteArray: Uint8Array) {
   let s = '0x';
   byteArray.forEach((byte) => {
     s += (`0${(byte & 0xFF).toString(16)}`).slice(-2);
@@ -61,11 +82,11 @@ function getGenericErrorAsString(errorCode: Buffer) {
   if (errorCode[0] === 0x6E && errorCode[1] === 0) { return 'Class not supported'; }
   if (errorCode[0] === 0x6F && errorCode[1] === 0) { return 'Unknown Error'; }
 
-  function InttoHex(d: number) {
+  function inttoHex(d: number) {
     return (`0${Number(d).toString(16)}`).slice(-2).toUpperCase();
   }
 
-  return `ErrorCode Unknown:${InttoHex(errorCode[0])} ${InttoHex(errorCode[1])}`;
+  return `ErrorCode Unknown:${inttoHex(errorCode[0])} ${inttoHex(errorCode[1])}`;
 }
 
 class ParseSelectAppResponseResult {
@@ -123,7 +144,8 @@ function parseSelectAppResponse(response: Buffer) {
 * @param {number[]} bytes raw byte[] with the netto data.
 * @param {receiveHandler} callback once the operation is finished.
 */
-function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = null) {
+function sendCommand(card: Security2GoCard, bytes: number[],  receiveHandler:
+  (buffer: Buffer) => void = (buffer: Buffer) => { return; }) {
   const maxResponseLength = 128;
   card.logSigning('connecting...');
   card.reader.connect({}, (errConnect: pcsc.AnyOrNothing, protocolConnnected: number) => {
@@ -164,11 +186,11 @@ function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = nu
                   throw errorMsg;
                 }
 
-    // reader.close();
-    // pcsc.close();
-                if (receiveHandler != null) {
-                  receiveHandler(dataTransmit);
-                }
+                // reader.close();
+                // pcsc.close();
+
+                receiveHandler(dataTransmit);
+
                 return true;
               });
           }
@@ -179,7 +201,7 @@ function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = nu
 }
 
 async function generateSignatureRaw(card: Security2GoCard, bytes: number[], keyIndex: number) {
-  function generateSignatureRawFunction(args: any, callback) {
+  function generateSignatureRawFunction(args: any, callback: (error: Error, result: string) => void) {
     // const { bytes } = args;
     // const { keyIndex } = args;
     // const { card } = args;
@@ -191,7 +213,7 @@ async function generateSignatureRaw(card: Security2GoCard, bytes: number[], keyI
     }
 
     const messageBuffer = new ArrayBuffer(38);
-    const messageBufferView = new Int8Array(messageBuffer);
+    const messageBufferView = new Uint8Array(messageBuffer);
 
     messageBufferView[1] = 0x18;
     messageBufferView[2] = keyIndex;
@@ -199,7 +221,8 @@ async function generateSignatureRaw(card: Security2GoCard, bytes: number[], keyI
     messageBufferView[4] = 0x20;
     messageBufferView.set(bytes, 5);
 
-    card.logSigning(`signing: ${toHexString(messageBufferView)}`);
+    card.logSigning(`signing: ${int8ArraytoHexString(messageBufferView)}`);
+
     sendCommand(card, messageBuffer, (sendCommandResponse, error) => {
       if (sendCommandResponse) {
         card.logSigning(`Signing: Got Response: ${toHexString(sendCommandResponse)}`);
