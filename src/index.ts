@@ -8,6 +8,8 @@ const web3utils = require('web3-utils');
 const util = require('util');
 const Tx = require('ethereumjs-tx');
 // const utils = require('ethereumjs-util');
+
+import web3Eth from 'web3-eth';
 import ethereumjsUtil from 'ethereumjs-util';
 // const { pcsc } = require('pcsclite');
 
@@ -347,11 +349,12 @@ class Security2GoCard {
     * defaults to 1 (first generated key on the card)
     * @returns hex-serialized transaction object (use getSignedTransactionObject() to get the raw object)
     */
-  public async signTransaction(web3, rawTransaction, cardKeyIndex = 1) {
+
+  public async signTransaction(web3Eth: web3Eth.Eth, rawTransaction: object, cardKeyIndex: number = 1) {
     // const tx = await this.getSignedTransactionObject(web3, rawTransaction, cardKeyIndex);
     // return toHex(tx.serialize());
 
-    const tx = await this.getSignedTransaction(web3, rawTransaction, cardKeyIndex);
+    const tx = await this.getSignedTransaction(web3Eth, rawTransaction, cardKeyIndex);
     return tx.rawTransaction;
   }
 
@@ -444,7 +447,7 @@ class Security2GoCard {
    * @returns object with r,s,v,hash,rawTransaction. compatible with interface required by web3.
    * compatible with transactionSigner.
    */
-  public async getSignedTransaction(web3, rawTransaction, cardKeyIndex = 1) {
+  public async getSignedTransaction(web3Eth: web3Eth.Eth, rawTransaction: object, cardKeyIndex: number = 1) {
     const address = await this.getAddress(cardKeyIndex);
     this.logSigning('address');
     this.logSigning(address);
@@ -453,7 +456,7 @@ class Security2GoCard {
     const transaction = JSON.parse(JSON.stringify(rawTransaction));
 
     if (!transaction.nonce) {
-      transaction.nonce = web3.utils.toHex(await web3.eth.getTransactionCount(address));
+      transaction.nonce = web3utils.toHex(await web3Eth.getTransactionCount(address));
     }
 
     // todo: is it safe to not add the "from" addres ?
@@ -474,7 +477,7 @@ class Security2GoCard {
     const result = {
       r: '0x',
       s: '0x',
-      v: '0x',
+      v: 0,
       messageHash: '0x',
       rawTransaction: '0x',
     };
@@ -506,14 +509,14 @@ class Security2GoCard {
      * @throws {*} error from sendSignedTransaction
      * @return {receipt} the web3 receipt
      */
-  public async signAndSendTransaction(web3, tx, cardKeyIndex = 1) {
-    const signature = await this.signTransaction(web3, tx, cardKeyIndex);
+  public async signAndSendTransaction(web3Eth: web3Eth.Eth, tx: object, cardKeyIndex: number = 1) {
+    const signature = await this.signTransaction(web3Eth, tx, cardKeyIndex);
 
     this.logWeb3(`tx: ${JSON.stringify(tx, null, 2)}`);
 
     try {
       this.logWeb3('sending transaction');
-      const txReceipt = await web3.eth.sendSignedTransaction(signature);
+      const txReceipt = await web3Eth.sendSignedTransaction(signature);
       this.logWeb3(`receipt: ${txReceipt}`);
       return txReceipt;
     } catch (error) {
@@ -529,7 +532,7 @@ class Security2GoCard {
      * console.log() if log_debug_web3
      * @param {*} message
      */
-  public logWeb3(message) {
+  public logWeb3(message: string) {
     if (this.log_debug_web3) {
       console.log(message);
     }
@@ -539,7 +542,7 @@ class Security2GoCard {
      * console.log() if log_debug_signing
      * @param {*} message
      */
-  public logSigning(message) {
+  public logSigning(message: any) {
     if (this.log_debug_signing) {
       console.log(message);
     }
