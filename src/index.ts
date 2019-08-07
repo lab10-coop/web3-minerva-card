@@ -7,8 +7,8 @@
 const web3utils = require('web3-utils');
 const util = require('util');
 const Tx = require('ethereumjs-tx');
-const utils = require('ethereumjs-util');
-
+// const utils = require('ethereumjs-util');
+import ethereumjsUtil from 'ethereumjs-util';
 // const { pcsc } = require('pcsclite');
 
 import { pcsc } from 'pcsclite';
@@ -200,7 +200,7 @@ function sendCommand(card: Security2GoCard, bytes: Uint8Array,  receiveHandler:
   });
 }
 
-async function generateSignatureRaw(card: Security2GoCard, bytes: number[], keyIndex: number) {
+async function generateSignatureRaw(card: Security2GoCard, bytes: Buffer, keyIndex: number) {
   function generateSignatureRawFunction(args: any, callback: (error?: Error, result?: string) => void) {
     // const { bytes } = args;
     // const { keyIndex } = args;
@@ -361,9 +361,9 @@ class Security2GoCard {
     * @param {byte} cardKeyIndex keyIndex index (0..255) of the Security2Go Card.
     * defaults to 1 (first generated key on the card)
     */
-  public async getSignatureFromHash(hashString, cardKeyIndex = 1) {
+  public async getSignatureFromHash(hashString: string, cardKeyIndex : number = 1) {
     let hash = hashString;
-    let hashBytes;
+    let hashBytes : Buffer;
 
     if (typeof hash === 'string') {
       if (hash.startsWith('0x')) {
@@ -412,12 +412,14 @@ class Security2GoCard {
     const result = {
       r: `0x${r}`,
       s: `0x${s}`,
+      v: 0,
     };
 
     const correctPublicKey = await this.getPublicKey(cardKeyIndex);
 
-    function isAddressMatching(testingVvalue) {
-      const pubKey = utils.ecrecover(hashBytes, testingVvalue, result.r, result.s);
+    function isAddressMatching(testingVvalue: number) {
+      const pubKey = ethereumjsUtil.ecrecover(hashBytes, testingVvalue,
+                                              Buffer.from(result.r, 'hex'), Buffer.from(result.s, 'hex'));
 
       // console.log('comparing public key');
       // console.log(pubKey);
@@ -425,10 +427,10 @@ class Security2GoCard {
       return correctPublicKey.equals(pubKey);
     }
 
-    if (isAddressMatching('0x1b')) {
-      result.v = '0x1b';
-    } else if (isAddressMatching('0x1c')) {
-      result.v = '0x1c';
+    if (isAddressMatching(0x1b)) {
+      result.v = 0x1b;
+    } else if (isAddressMatching(0x1c)) {
+      result.v = 0x1c;
     } else {
       throw Error('unable to determine correct v value');
     }
