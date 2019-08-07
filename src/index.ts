@@ -8,11 +8,12 @@ const web3utils = require("web3-utils");
 const util = require("util");
 const Tx = require("ethereumjs-tx");
 const utils = require("ethereumjs-util");
-//const pcsclite = require("pcsclite");
+// const pcsclite = require("pcsclite");
 
-import { pcsc } from 'pcsclite';
+import { pcsc } from "pcsclite";
 
 function toHex(nonHex: Buffer, prefix: boolean = true) {
+
   let temp = nonHex.toString("hex");
   if (prefix) {
     temp = `0x${temp}`;
@@ -76,8 +77,7 @@ class ParseSelectAppResponseResult {
   public success?: boolean;
   public errorString?: string;
 
-
-  constructor (){
+  constructor() {
   }
 }
 
@@ -126,7 +126,7 @@ function parseSelectAppResponse(response: Buffer) {
 function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = null) {
   const maxResponseLength = 128;
   card.logSigning("connecting...");
-  card.reader.connect({},(errConnect: pcsc.AnyOrNothing, protocolConnnected: number) => {
+  card.reader.connect({}, (errConnect: pcsc.AnyOrNothing, protocolConnnected: number) => {
     if (errConnect) {
       console.error(`Connecting Error:${errConnect}`);
     } else {
@@ -176,8 +176,8 @@ function sendCommand(card: Security2GoCard, bytes: number[], receiveHandler = nu
   });
 }
 
-async function generateSignatureRaw(card, bytes, keyIndex) {
-  function generateSignatureRawFunction(args, callback) {
+async function generateSignatureRaw(card: Security2GoCard, bytes: number[], keyIndex: number) {
+  function generateSignatureRawFunction(args: any, callback) {
     // const { bytes } = args;
     // const { keyIndex } = args;
     // const { card } = args;
@@ -206,7 +206,7 @@ async function generateSignatureRaw(card, bytes, keyIndex) {
           card.logSigning("card Signature is a success!");
           // todo:
           const resultBin = sendCommandResponse.slice(9, sendCommandResponse.length - 2);
-          const result = web3utils.bytesToHex(resultBin);
+          const result: string = web3utils.bytesToHex(resultBin);
           callback(null, result);
           return;
         }
@@ -224,8 +224,8 @@ async function generateSignatureRaw(card, bytes, keyIndex) {
 }
 
 class Security2GoCard {
-           
-  public reader : pcsc.CardReader;
+
+  public reader: pcsc.CardReader;
   public PROTOCOL_ID: number;
   public log_debug_signing: boolean;
   public log_debug_web3: boolean;
