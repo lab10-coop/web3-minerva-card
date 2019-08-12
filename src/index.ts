@@ -9,11 +9,11 @@ const util = require('util');
 const Tx = require('ethereumjs-tx');
 // const utils = require('ethereumjs-util');
 
-import web3Eth from 'web3-eth';
+// import web3Eth from 'web3-eth';
 import ethereumjsUtil from 'ethereumjs-util';
 // const { pcsc } = require('pcsclite');
 
-import { pcsc } from 'pcsclite';
+import  { AnyOrNothing, CardReader } from 'pcsclite';
 // import { pcsc } from 'pcsclite';
 // import pcsclite from 'pcsclite';
 // import { default as pcsc } from 'pcsclite';
@@ -150,7 +150,8 @@ function sendCommand(card: Security2GoCard, bytes: Uint8Array,  receiveHandler:
   (buffer?: Buffer, error?: Error) => void = (buffer?: Buffer, error?: Error) => { return; }) {
   const maxResponseLength = 128;
   card.logSigning('connecting...');
-  card.reader.connect({}, (errConnect: pcsc.AnyOrNothing, protocolConnnected: number) => {
+
+  card.reader.connect({}, (errConnect: AnyOrNothing, protocolConnnected: number) => {
     if (errConnect) {
       console.error(`Connecting Error:${errConnect}`);
     } else {
@@ -164,7 +165,7 @@ function sendCommand(card: Security2GoCard, bytes: Uint8Array,  receiveHandler:
 
       card.reader.transmit(
         Buffer.from(selectAppIncldingCommand), maxResponseLength, protocol,
-        (errSelectAppTransmit: pcsc.AnyOrNothing, dataSelectAppTransmit: Buffer) => {
+        (errSelectAppTransmit: AnyOrNothing, dataSelectAppTransmit: Buffer) => {
           card.logSigning('select App Completed');
           if (errSelectAppTransmit) {
             console.error(errSelectAppTransmit);
@@ -174,7 +175,7 @@ function sendCommand(card: Security2GoCard, bytes: Uint8Array,  receiveHandler:
             // todo: validate result.
             card.reader.transmit(
               Buffer.from(bytes),
-              maxResponseLength, protocol, (err: pcsc.AnyOrNothing, dataTransmit: Buffer) => {
+              maxResponseLength, protocol, (err: AnyOrNothing, dataTransmit: Buffer) => {
                 if (err) {
                   // todo: interprate error here ?
                   card.logSigning('Error on transmitting');
@@ -252,7 +253,7 @@ async function generateSignatureRaw(card: Security2GoCard, bytes: Buffer, keyInd
 
 class Security2GoCard {
 
-  public reader: pcsc.CardReader;
+  public reader: CardReader;
   public PROTOCOL_ID: number;
   public log_debug_signing: boolean;
   public log_debug_web3: boolean;
@@ -260,9 +261,9 @@ class Security2GoCard {
   /**
      * Represents an Infinion Security2Go played on a card reader using the pcsclite framework.
      *
-     * @param {pcsc.CardReader} reader a CardReader from pcsclite.
+     * @param {CardReader} reader a CardReader from pcsclite.
      */
-  constructor(reader: pcsc.CardReader) {
+  constructor(reader: CardReader) {
     this.reader = reader;
     // todo: in our case protocol was allways 2. sometimes reader.connect() delievers a protocol number, sometimes not
     // this is a very uncool workaround for this problem.
@@ -350,11 +351,11 @@ class Security2GoCard {
     * @returns hex-serialized transaction object (use getSignedTransactionObject() to get the raw object)
     */
 
-  public async signTransaction(web3Eth: web3Eth.Eth, rawTransaction: object, cardKeyIndex: number = 1) {
+  public async signTransaction(rawTransaction: object, cardKeyIndex: number = 1) {
     // const tx = await this.getSignedTransactionObject(web3, rawTransaction, cardKeyIndex);
     // return toHex(tx.serialize());
 
-    const tx = await this.getSignedTransaction(web3Eth, rawTransaction, cardKeyIndex);
+    const tx = await this.getSignedTransaction(rawTransaction, cardKeyIndex);
     return tx.rawTransaction;
   }
 
@@ -447,7 +448,7 @@ class Security2GoCard {
    * @returns object with r,s,v,hash,rawTransaction. compatible with interface required by web3.
    * compatible with transactionSigner.
    */
-  public async getSignedTransaction(web3Eth: web3Eth.Eth, rawTransaction: object, cardKeyIndex: number = 1) {
+  public async getSignedTransaction(rawTransaction: object, cardKeyIndex: number = 1) {
     const address = await this.getAddress(cardKeyIndex);
     this.logSigning('address');
     this.logSigning(address);
@@ -455,9 +456,9 @@ class Security2GoCard {
     // console.log(`rawTransaction: ${JSON.stringify(rawTransaction)}`);
     const transaction = JSON.parse(JSON.stringify(rawTransaction));
 
-    if (!transaction.nonce) {
-      transaction.nonce = web3utils.toHex(await web3Eth.getTransactionCount(address));
-    }
+    // if (!transaction.nonce) {
+    //   transaction.nonce = web3utils.toHex(await web3Eth.getTransactionCount(address));
+    // }
 
     // todo: is it safe to not add the "from" addres ?
     // maybe we should throw an error if "from" is not the signing card ?
@@ -502,31 +503,31 @@ class Security2GoCard {
     return result;
   }
 
-  /**
-     * @param {Web3} web3 a Web3 instance
-     * @param {object} web3 transaction tx
-     * @param {number} cardKeyIndex keyIndex index (0..255) of the Security2Go Card
-     * @throws {*} error from sendSignedTransaction
-     * @return {receipt} the web3 receipt
-     */
-  public async signAndSendTransaction(web3Eth: web3Eth.Eth, tx: object, cardKeyIndex: number = 1) {
-    const signature = await this.signTransaction(web3Eth, tx, cardKeyIndex);
+  // /**
+  //    * @param {Web3} web3 a Web3 instance
+  //    * @param {object} web3 transaction tx
+  //    * @param {number} cardKeyIndex keyIndex index (0..255) of the Security2Go Card
+  //    * @throws {*} error from sendSignedTransaction
+  //    * @return {receipt} the web3 receipt
+  //    */
+  // public async signAndSendTransaction(web3Eth: web3Eth.Eth, tx: object, cardKeyIndex: number = 1) {
+  //   const signature = await this.signTransaction(web3Eth, tx, cardKeyIndex);
 
-    this.logWeb3(`tx: ${JSON.stringify(tx, null, 2)}`);
+  //   this.logWeb3(`tx: ${JSON.stringify(tx, null, 2)}`);
 
-    try {
-      this.logWeb3('sending transaction');
-      const txReceipt = await web3Eth.sendSignedTransaction(signature);
-      this.logWeb3(`receipt: ${txReceipt}`);
-      return txReceipt;
-    } catch (error) {
-      // the following error occurs all the time.
-      // Error: Transaction has been reverted by the EVM:
-      // no idea why yet....
-      console.error('Error:', error);
-      throw error;
-    }
-  }
+  //   try {
+  //     this.logWeb3('sending transaction');
+  //     const txReceipt = await web3Eth.sendSignedTransaction(signature);
+  //     this.logWeb3(`receipt: ${txReceipt}`);
+  //     return txReceipt;
+  //   } catch (error) {
+  //     // the following error occurs all the time.
+  //     // Error: Transaction has been reverted by the EVM:
+  //     // no idea why yet....
+  //     console.error('Error:', error);
+  //     throw error;
+  //   }
+  // }
 
   /**
      * console.log() if log_debug_web3
@@ -549,22 +550,22 @@ class Security2GoCard {
   }
 }
 
-class MinervaCardSigner {
-  constructor() {
-    this.card = null;
-    this.cardKeyIndex = 1;
-    this.web3 = null;
-  }
+// class MinervaCardSigner {
+//   constructor() {
+//     this.card = null;
+//     this.cardKeyIndex = 1;
+//     this.web3 = null;
+//   }
 
-  public async sign(rawTx) {
-    console.log('signing with MinervaCardSigner');
-    const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
-    console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
-    return signedTransaction;
-  }
-}
+//   public async sign(rawTx) {
+//     console.log('signing with MinervaCardSigner');
+//     const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
+//     console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
+//     return signedTransaction;
+//   }
+// }
 
 module.exports = {
   Security2GoCard,
-  MinervaCardSigner,
+  // MinervaCardSigner,
 };
