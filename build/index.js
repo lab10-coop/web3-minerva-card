@@ -483,19 +483,22 @@ class Security2GoCard {
         }
     }
 }
-// class MinervaCardSigner {
-//   constructor() {
-//     this.card = null;
-//     this.cardKeyIndex = 1;
-//     this.web3 = null;
-//   }
-//   public async sign(rawTx) {
-//     console.log('signing with MinervaCardSigner');
-//     const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
-//     console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
-//     return signedTransaction;
-//   }
-// }
+class MinervaCardSigner {
+    constructor() {
+    }
+    async sign(rawTx) {
+        // 1.) we need to activate the reader
+        // 2.) we need to wait for a card
+        // 3.) we need to get a signature from the card and return it.
+        // pcsc.on('reader', (reader) => {
+        const pcsc = new PCSCLite();
+        console.log('signing with MinervaCardSigner');
+        const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
+        console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
+        return signedTransaction;
+    }
+}
+exports.MinervaCardSigner = MinervaCardSigner;
 module.exports = {
     Security2GoCard,
 };
