@@ -14,6 +14,8 @@ const Tx = require('ethereumjs-tx');
 // const utils = require('ethereumjs-util');
 // import web3Eth from 'web3-eth';
 const ethereumjs_util_1 = __importDefault(require("ethereumjs-util"));
+// const { pcsc } = require('pcsclite');
+const pcsclite_1 = require("@ap-mitch/pcsclite");
 // import { pcsc } from 'pcsclite';
 // import pcsclite from 'pcsclite';
 // import { default as pcsc } from 'pcsclite';
@@ -483,22 +485,31 @@ class Security2GoCard {
         }
     }
 }
-// export class MinervaCardSigner {
-//   constructor() {
-//   }
-//   public async sign(rawTx: object) {
-//     // 1.) we need to activate the reader
-//     // 2.) we need to wait for a card
-//     // 3.) we need to get a signature from the card and return it.
-//     // pcsc.on('reader', (reader) => {
-//     // const PCSCLite = undefined;
-//     // const pcsc = new PCSCLite();
-//     // console.log('signing with MinervaCardSigner');
-//     // const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
-//     // console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
-//     // return signedTransaction;
-//   }
-// }
+class MinervaCardSigner {
+    constructor() {
+    }
+    async sign(rawTx) {
+        // 1.) we need to activate the reader
+        // 2.) we need to wait for a card
+        // 3.) we need to get a signature from the card and return it.
+        // pcsc.on('reader', (reader) => {
+        const pcscCom = pcsclite_1.pcsc();
+        console.log('Got Transaction to sign:', rawTx);
+        console.log('Trying to connect to Reader');
+        pcscCom.on('reader', (reader) => {
+            reader.on('status', (status) => {
+                console.log(status);
+            });
+        });
+        // const PCSCLite = undefined;
+        // const pcsc = new PCSCLite();
+        // console.log('signing with MinervaCardSigner');
+        // const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
+        // console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
+        // return signedTransaction;
+    }
+}
+exports.MinervaCardSigner = MinervaCardSigner;
 module.exports = {
     Security2GoCard,
 };
