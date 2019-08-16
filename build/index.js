@@ -486,8 +486,18 @@ class MinervaCardSigner {
         console.log('Got Transaction to sign:', rawTx);
         console.log('Trying to connect to Reader');
         pcscCom.on('reader', (reader) => {
+            console.log(`reader found: ${reader}`);
             reader.on('status', (status) => {
-                console.log(status);
+                console.log(`reader status changed: ${status}`);
+                const result = {
+                    messageHash: '',
+                    r: '',
+                    s: '',
+                    v: '',
+                    rawTransaction: '',
+                    transactionHash: '',
+                };
+                return result;
             });
         });
         // const PCSCLite = undefined;
@@ -495,15 +505,6 @@ class MinervaCardSigner {
         // console.log('signing with MinervaCardSigner');
         // const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
         // console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
-        const result = {
-            messageHash: '',
-            r: '',
-            s: '',
-            v: '',
-            rawTransaction: '',
-            transactionHash: '',
-        };
-        return result;
     }
 }
 exports.MinervaCardSigner = MinervaCardSigner;

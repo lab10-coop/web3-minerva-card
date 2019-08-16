@@ -563,10 +563,23 @@ export class MinervaCardSigner implements TransactionSigner {
 
     console.log('Trying to connect to Reader');
     pcscCom.on('reader', (reader: CardReader) => {
+      console.log(`reader found: ${reader}`);
       reader.on('status', (status: Status) => {
-        console.log(status);
+        console.log(`reader status changed: ${status}`);
+        const result = {
+          messageHash: '',
+          r: '',
+          s: '',
+          v: '',
+          rawTransaction: '',
+          transactionHash: '',
+        };
+
+        return result;
       });
     });
+
+    //todo: await here.
 
     // const PCSCLite = undefined;
     // const pcsc = new PCSCLite();
@@ -575,15 +588,5 @@ export class MinervaCardSigner implements TransactionSigner {
     // const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
     // console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
 
-    const result = {
-      messageHash: '',
-      r: '',
-      s: '',
-      v: '',
-      rawTransaction: '',
-      transactionHash: '',
-    };
-
-    return result;
   }
 }

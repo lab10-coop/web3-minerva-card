@@ -22,8 +22,6 @@ async function test() {
 
   const web3tmp = new web3(web3Address);
 
-
-
   const web3Options = {
     transactionConfirmationBlocks: 1,
     defaultGasPrice : web3tmp.utils.toHex('100000000000'),
@@ -37,7 +35,7 @@ async function test() {
 
   const transaction = {
     from: '0x756269ce7e0285670ecbd234f230645efba049d3',
-    to: '0x3939A535d686Da047C589c80538cEb6CfFC933EE',
+    to:   '0x3939a535d686da047c589c80538ceb6cffc933ee',
     value: '0x1000',
     gasPrice: web3Instance.utils.toHex('100000000'), // 100 gwei
   };
