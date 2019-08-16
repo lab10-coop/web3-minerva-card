@@ -410,7 +410,7 @@ class Security2GoCard {
     const result = {
       r: `0x${r}`,
       s: `0x${s}`,
-      v: 0,
+      v: '0x',
     };
 
     const correctPublicKey = await this.getPublicKey(cardKeyIndex);
@@ -426,9 +426,9 @@ class Security2GoCard {
     }
 
     if (isAddressMatching(0x1b)) {
-      result.v = 0x1b;
+      result.v = '0x1b';
     } else if (isAddressMatching(0x1c)) {
-      result.v = 0x1c;
+      result.v = '0x1c';
     } else {
       throw Error('unable to determine correct v value');
     }
@@ -442,7 +442,7 @@ class Security2GoCard {
    * @returns object with r,s,v,hash,rawTransaction. compatible with interface required by web3.
    * compatible with transactionSigner.
    */
-  public async getSignedTransaction(rawTransaction: object, cardKeyIndex: number = 1) {
+  public async getSignedTransaction(rawTransaction: object, cardKeyIndex: number = 1) : Promise<SignedTransaction> {
     const address = await this.getAddress(cardKeyIndex);
     this.logSigning('address');
     this.logSigning(address);
@@ -472,7 +472,7 @@ class Security2GoCard {
     const result = {
       r: '0x',
       s: '0x',
-      v: 0,
+      v: '0x',
       messageHash: '0x',
       rawTransaction: '0x',
     };
@@ -569,15 +569,13 @@ export class MinervaCardSigner implements TransactionSigner {
         console.log(`reader found: ${reader}`);
         reader.on('status', (status: Status) => {
           console.log(`reader status changed: ${status}`);
-          const result = {
-            messageHash: '',
-            r: '',
-            s: '',
-            v: '',
-            rawTransaction: '',
-            transactionHash: '',
-          };
-          resolve(result);
+          if ((status.state & reader.SCARD_STATE_PRESENT)) {
+            const sec2GoCard = new Security2GoCard(reader);
+            const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx);
+            getSignedTransactionPromise.then((signedTransaction: SignedTransaction) => {
+              resolve(signedTransaction);
+            });
+          }
         });
       });
     });

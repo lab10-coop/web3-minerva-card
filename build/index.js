@@ -364,7 +364,7 @@ class Security2GoCard {
         const result = {
             r: `0x${r}`,
             s: `0x${s}`,
-            v: 0,
+            v: '0x',
         };
         const correctPublicKey = await this.getPublicKey(cardKeyIndex);
         function isAddressMatching(testingVvalue) {
@@ -375,10 +375,10 @@ class Security2GoCard {
             return correctPublicKey.equals(pubKey);
         }
         if (isAddressMatching(0x1b)) {
-            result.v = 0x1b;
+            result.v = '0x1b';
         }
         else if (isAddressMatching(0x1c)) {
-            result.v = 0x1c;
+            result.v = '0x1c';
         }
         else {
             throw Error('unable to determine correct v value');
@@ -414,7 +414,7 @@ class Security2GoCard {
         const result = {
             r: '0x',
             s: '0x',
-            v: 0,
+            v: '0x',
             messageHash: '0x',
             rawTransaction: '0x',
         };
@@ -491,25 +491,17 @@ class MinervaCardSigner {
                 console.log(`reader found: ${reader}`);
                 reader.on('status', (status) => {
                     console.log(`reader status changed: ${status}`);
-                    const result = {
-                        messageHash: '',
-                        r: '',
-                        s: '',
-                        v: '',
-                        rawTransaction: '',
-                        transactionHash: '',
-                    };
-                    resolve(result);
+                    if ((status.state & reader.SCARD_STATE_PRESENT)) {
+                        const sec2GoCard = new Security2GoCard(reader);
+                        const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx);
+                        getSignedTransactionPromise.then((signedTransaction) => {
+                            resolve(signedTransaction);
+                        });
+                    }
                 });
             });
         });
         return promise;
-        // todo: await here.
-        // const PCSCLite = undefined;
-        // const pcsc = new PCSCLite();
-        // console.log('signing with MinervaCardSigner');
-        // const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
-        // console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
     }
 }
 exports.MinervaCardSigner = MinervaCardSigner;
