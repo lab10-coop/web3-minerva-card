@@ -550,7 +550,7 @@ export class MinervaCardSigner implements TransactionSigner {
 
   }
 
-  public async sign(rawTx: TransactionConfig) : Promise<SignedTransaction> {
+  public sign(rawTx: TransactionConfig) : Promise<SignedTransaction> {
 
     // 1.) we need to activate the reader
     // 2.) we need to wait for a card
@@ -559,34 +559,29 @@ export class MinervaCardSigner implements TransactionSigner {
     // pcsc.on('reader', (reader) => {
     const pcscCom = pcsc();
 
+    // const result: SignedTransaction = undefined;
     console.log('Got Transaction to sign:', rawTx);
 
-    console.log('Trying to connect to Reader');
-    pcscCom.on('reader', (reader: CardReader) => {
-      console.log(`reader found: ${reader}`);
-      reader.on('status', (status: Status) => {
-        console.log(`reader status changed: ${status}`);
-        const result = {
-          messageHash: '',
-          r: '',
-          s: '',
-          v: '',
-          rawTransaction: '',
-          transactionHash: '',
-        };
+    const promise = new Promise<SignedTransaction>((resolve, reject) => {
 
-        return result;
+      console.log('Trying to connect to Reader');
+      pcscCom.on('reader', (reader: CardReader) => {
+        console.log(`reader found: ${reader}`);
+        reader.on('status', (status: Status) => {
+          console.log(`reader status changed: ${status}`);
+          const result = {
+            messageHash: '',
+            r: '',
+            s: '',
+            v: '',
+            rawTransaction: '',
+            transactionHash: '',
+          };
+          resolve(result);
+        });
       });
     });
 
-    //todo: await here.
-
-    // const PCSCLite = undefined;
-    // const pcsc = new PCSCLite();
-
-    // console.log('signing with MinervaCardSigner');
-    // const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
-    // console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
-
+    return promise;
   }
 }

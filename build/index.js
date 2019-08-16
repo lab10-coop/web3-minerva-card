@@ -477,29 +477,34 @@ class Security2GoCard {
 class MinervaCardSigner {
     constructor() {
     }
-    async sign(rawTx) {
+    sign(rawTx) {
         // 1.) we need to activate the reader
         // 2.) we need to wait for a card
         // 3.) we need to get a signature from the card and return it.
         // pcsc.on('reader', (reader) => {
         const pcscCom = pcsc();
+        // const result: SignedTransaction = undefined;
         console.log('Got Transaction to sign:', rawTx);
-        console.log('Trying to connect to Reader');
-        pcscCom.on('reader', (reader) => {
-            console.log(`reader found: ${reader}`);
-            reader.on('status', (status) => {
-                console.log(`reader status changed: ${status}`);
-                const result = {
-                    messageHash: '',
-                    r: '',
-                    s: '',
-                    v: '',
-                    rawTransaction: '',
-                    transactionHash: '',
-                };
-                return result;
+        const promise = new Promise((resolve, reject) => {
+            console.log('Trying to connect to Reader');
+            pcscCom.on('reader', (reader) => {
+                console.log(`reader found: ${reader}`);
+                reader.on('status', (status) => {
+                    console.log(`reader status changed: ${status}`);
+                    const result = {
+                        messageHash: '',
+                        r: '',
+                        s: '',
+                        v: '',
+                        rawTransaction: '',
+                        transactionHash: '',
+                    };
+                    resolve(result);
+                });
             });
         });
+        return promise;
+        // todo: await here.
         // const PCSCLite = undefined;
         // const pcsc = new PCSCLite();
         // console.log('signing with MinervaCardSigner');
