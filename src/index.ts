@@ -583,8 +583,3 @@ export class MinervaCardSigner implements TransactionSigner {
     return result;
   }
 }
-
-module.exports = {
-  Security2GoCard,
-  // MinervaCardSigner,
-};

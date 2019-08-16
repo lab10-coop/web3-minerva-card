@@ -508,7 +508,4 @@ class MinervaCardSigner {
     }
 }
 exports.MinervaCardSigner = MinervaCardSigner;
-module.exports = {
-    Security2GoCard,
-};
 //# sourceMappingURL=index.js.map
