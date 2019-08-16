@@ -16,16 +16,6 @@ const Tx = require('ethereumjs-tx');
 const ethereumjs_util_1 = __importDefault(require("ethereumjs-util"));
 // const { pcsc } = require('pcsclite');
 const pcsclite_1 = require("@ap-mitch/pcsclite");
-// import { pcsc } from 'pcsclite';
-// import pcsclite from 'pcsclite';
-// import { default as pcsc } from 'pcsclite';
-// import { default as pcsc } from 'pcsclite';
-// import {} from 'pcsclite';
-// import * as pcsc from 'pcsclite';
-// let x :pcsc.AnyOrNothing;
-// let y :pcsclite.AnyOrNothing;
-// x = 7;
-// y = 8;
 function toHex(nonHex, prefix = true) {
     let temp = nonHex.toString('hex');
     if (prefix) {
@@ -506,7 +496,15 @@ class MinervaCardSigner {
         // console.log('signing with MinervaCardSigner');
         // const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
         // console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
-        // return signedTransaction;
+        const result = {
+            messageHash: '',
+            r: '',
+            s: '',
+            v: '',
+            rawTransaction: '',
+            transactionHash: '',
+        };
+        return result;
     }
 }
 exports.MinervaCardSigner = MinervaCardSigner;

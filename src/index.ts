@@ -14,18 +14,8 @@ import ethereumjsUtil from 'ethereumjs-util';
 // const { pcsc } = require('pcsclite');
 
 import  { AnyOrNothing, CardReader, PCSCLite, pcsc, Status } from '@ap-mitch/pcsclite';
-// import { pcsc } from 'pcsclite';
-// import pcsclite from 'pcsclite';
-// import { default as pcsc } from 'pcsclite';
-// import { default as pcsc } from 'pcsclite';
-// import {} from 'pcsclite';
-// import * as pcsc from 'pcsclite';
 
-// let x :pcsc.AnyOrNothing;
-// let y :pcsclite.AnyOrNothing;
-
-// x = 7;
-// y = 8;
+import { TransactionSigner, SignedTransaction, TransactionConfig  } from 'web3-core';
 
 function toHex(nonHex: Buffer, prefix: boolean = true) {
 
@@ -550,13 +540,13 @@ class Security2GoCard {
   }
 }
 
-export class MinervaCardSigner {
+export class MinervaCardSigner implements TransactionSigner {
 
   constructor() {
 
   }
 
-  public async sign(rawTx: object) {
+  public async sign(rawTx: TransactionConfig) : Promise<SignedTransaction> {
 
     // 1.) we need to activate the reader
     // 2.) we need to wait for a card
@@ -580,7 +570,17 @@ export class MinervaCardSigner {
     // console.log('signing with MinervaCardSigner');
     // const signedTransaction = await this.card.getSignedTransaction(this.web3, rawTx, this.cardKeyIndex);
     // console.log(`signed with MinervaCardSigner: ${JSON.stringify(signedTransaction)}`);
-    // return signedTransaction;
+
+    const result = {
+      messageHash: '',
+      r: '',
+      s: '',
+      v: '',
+      rawTransaction: '',
+      transactionHash: '',
+    };
+
+    return result;
   }
 }
 
