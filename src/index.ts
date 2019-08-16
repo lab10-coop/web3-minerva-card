@@ -7,13 +7,17 @@
 const web3utils = require('web3-utils');
 const util = require('util');
 const Tx = require('ethereumjs-tx');
+const pcsc = require('@ap-mitch/pcsclite');
 // const utils = require('ethereumjs-util');
 
 // import web3Eth from 'web3-eth';
 import ethereumjsUtil from 'ethereumjs-util';
 // const { pcsc } = require('pcsclite');
 
-import  { AnyOrNothing, CardReader, PCSCLite, pcsc, Status } from '@ap-mitch/pcsclite';
+import  { AnyOrNothing, CardReader, PCSCLite, Status } from '@ap-mitch/pcsclite';
+// import pcsclite from '@ap-mitch/pcsclite';
+
+// const AnyOrNothing = pcsclite .pcsc();
 
 import { TransactionSigner, SignedTransaction, TransactionConfig  } from 'web3-core';
 

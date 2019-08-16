@@ -11,11 +11,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const web3utils = require('web3-utils');
 const util = require('util');
 const Tx = require('ethereumjs-tx');
+const pcsc = require('@ap-mitch/pcsclite');
 // const utils = require('ethereumjs-util');
 // import web3Eth from 'web3-eth';
 const ethereumjs_util_1 = __importDefault(require("ethereumjs-util"));
-// const { pcsc } = require('pcsclite');
-const pcsclite_1 = require("@ap-mitch/pcsclite");
 function toHex(nonHex, prefix = true) {
     let temp = nonHex.toString('hex');
     if (prefix) {
@@ -483,7 +482,7 @@ class MinervaCardSigner {
         // 2.) we need to wait for a card
         // 3.) we need to get a signature from the card and return it.
         // pcsc.on('reader', (reader) => {
-        const pcscCom = pcsclite_1.pcsc();
+        const pcscCom = pcsc();
         console.log('Got Transaction to sign:', rawTx);
         console.log('Trying to connect to Reader');
         pcscCom.on('reader', (reader) => {
