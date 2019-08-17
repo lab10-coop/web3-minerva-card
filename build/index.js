@@ -36,6 +36,13 @@ function int8ArraytoHexString(byteArray) {
     });
     return s;
 }
+function hexStringToBuffer(_hexString) {
+    let hexString = _hexString;
+    if (hexString.startsWith('0x')) {
+        hexString = hexString.substring(2, hexString.length);
+    }
+    return Buffer.from(hexString, 'hex');
+}
 function isError(code) {
     if (code[0] === 0x90 && code[1] === 0) {
         return false;
@@ -118,7 +125,7 @@ function parseSelectAppResponse(response) {
     else if (response.length === 14) {
         // TODO:
         // according to Documentation, SELECT APP response should be 20 bytes, but is 14.
-        console.log(toHexString(response));
+        // console.log(toHexString(response));
     }
     else {
         throw Error(`unexpected SelectAppResponse length: ${response.length}`);
@@ -151,9 +158,12 @@ function sendCommand(card, bytes, receiveHandler = (buffer, error) => { return; 
             card.reader.transmit(Buffer.from(selectAppIncldingCommand), maxResponseLength, protocol, (errSelectAppTransmit, dataSelectAppTransmit) => {
                 card.logSigning('select App Completed');
                 if (errSelectAppTransmit) {
+                    console.error('Error Select App Transmit');
                     console.error(errSelectAppTransmit);
                 }
                 else {
+                    const hexResponse = toHex(dataSelectAppTransmit);
+                    card.logSigning(`SelectApp result Hex: ${hexResponse}`);
                     const selectAppResponse = parseSelectAppResponse(dataSelectAppTransmit);
                     card.logSigning(`SelectApp result: ${JSON.stringify(selectAppResponse)} `);
                     // todo: validate result.
@@ -172,6 +182,7 @@ function sendCommand(card, bytes, receiveHandler = (buffer, error) => { return; 
                         }
                         // reader.close();
                         // pcsc.close();
+                        card.logSigning(`received data: ${toHex(dataTransmit)}`);
                         receiveHandler(dataTransmit, undefined);
                         return true;
                     });
@@ -368,7 +379,8 @@ class Security2GoCard {
         };
         const correctPublicKey = await this.getPublicKey(cardKeyIndex);
         function isAddressMatching(testingVvalue) {
-            const pubKey = ethereumjs_util_1.default.ecrecover(hashBytes, testingVvalue, Buffer.from(result.r, 'hex'), Buffer.from(result.s, 'hex'));
+            console.log(`isAddressMatching ? r: ${result.r} s: ${result.s} v: ${testingVvalue} hash: ${toHex(hashBytes)}`);
+            const pubKey = ethereumjs_util_1.default.ecrecover(hashBytes, testingVvalue, hexStringToBuffer(result.r), hexStringToBuffer(result.s));
             // console.log('comparing public key');
             // console.log(pubKey);
             // console.log(correctPublicKey);
@@ -475,7 +487,8 @@ class Security2GoCard {
     }
 }
 class MinervaCardSigner {
-    constructor() {
+    constructor(cardKeyIndex = 1) {
+        this.cardKeyIndex = cardKeyIndex;
     }
     sign(rawTx) {
         // 1.) we need to activate the reader
@@ -490,11 +503,16 @@ class MinervaCardSigner {
             pcscCom.on('reader', (reader) => {
                 console.log(`reader found: ${reader}`);
                 reader.on('status', (status) => {
-                    console.log(`reader status changed: ${status}`);
+                    console.log(`reader status changed: ${status}`, status);
                     if ((status.state & reader.SCARD_STATE_PRESENT)) {
+                        console.log('detected card Present.');
                         const sec2GoCard = new Security2GoCard(reader);
-                        const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx);
+                        sec2GoCard.log_debug_signing = true;
+                        sec2GoCard.log_debug_web3 = true;
+                        console.log('retrieving signed transaction...');
+                        const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx, this.cardKeyIndex);
                         getSignedTransactionPromise.then((signedTransaction) => {
+                            console.log('resolving web3 signer');
                             resolve(signedTransaction);
                         });
                     }

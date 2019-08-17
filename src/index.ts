@@ -46,6 +46,15 @@ function int8ArraytoHexString(byteArray: Uint8Array) {
   return s;
 }
 
+function hexStringToBuffer(_hexString: string) : Buffer {
+  let hexString = _hexString;
+  if (hexString.startsWith('0x')) {
+    hexString = hexString.substring(2, hexString.length);
+  }
+  return Buffer.from(hexString, 'hex');
+
+}
+
 function isError(code: Buffer) {
   if (code[0] === 0x90 && code[1] === 0) { return false; }
   return true;
@@ -98,7 +107,7 @@ class ParseSelectAppResponseResult {
   }
 }
 
-function parseSelectAppResponse(response: Buffer) {
+function parseSelectAppResponse(response: Buffer) : ParseSelectAppResponseResult {
   const result = new ParseSelectAppResponseResult();
 
   if (response.length === 2) {
@@ -124,7 +133,8 @@ function parseSelectAppResponse(response: Buffer) {
   } else if (response.length === 14) {
     // TODO:
     // according to Documentation, SELECT APP response should be 20 bytes, but is 14.
-    console.log(toHexString(response));
+    // console.log(toHexString(response));
+
   } else {
     throw Error(`unexpected SelectAppResponse length: ${response.length}`);
   }
@@ -162,8 +172,11 @@ function sendCommand(card: Security2GoCard, bytes: Uint8Array,  receiveHandler:
         (errSelectAppTransmit: AnyOrNothing, dataSelectAppTransmit: Buffer) => {
           card.logSigning('select App Completed');
           if (errSelectAppTransmit) {
+            console.error('Error Select App Transmit');
             console.error(errSelectAppTransmit);
           } else {
+            const hexResponse = toHex(dataSelectAppTransmit);
+            card.logSigning(`SelectApp result Hex: ${hexResponse}`);
             const selectAppResponse = parseSelectAppResponse(dataSelectAppTransmit);
             card.logSigning(`SelectApp result: ${JSON.stringify(selectAppResponse)} `);
             // todo: validate result.
@@ -185,7 +198,7 @@ function sendCommand(card: Security2GoCard, bytes: Uint8Array,  receiveHandler:
 
                 // reader.close();
                 // pcsc.close();
-
+                card.logSigning(`received data: ${toHex(dataTransmit)}`);
                 receiveHandler(dataTransmit, undefined);
 
                 return true;
@@ -416,8 +429,11 @@ class Security2GoCard {
     const correctPublicKey = await this.getPublicKey(cardKeyIndex);
 
     function isAddressMatching(testingVvalue: number) {
+
+      // console.log(`isAddressMatching ? r: ${result.r} s: ${result.s} v: ${testingVvalue} hash: ${toHex(hashBytes)}`);
+
       const pubKey = ethereumjsUtil.ecrecover(hashBytes, testingVvalue,
-                                              Buffer.from(result.r, 'hex'), Buffer.from(result.s, 'hex'));
+                                              hexStringToBuffer(result.r), hexStringToBuffer(result.s));
 
       // console.log('comparing public key');
       // console.log(pubKey);
@@ -546,7 +562,7 @@ class Security2GoCard {
 
 export class MinervaCardSigner implements TransactionSigner {
 
-  constructor() {
+  constructor(public cardKeyIndex: number = 1) {
 
   }
 
@@ -568,11 +584,16 @@ export class MinervaCardSigner implements TransactionSigner {
       pcscCom.on('reader', (reader: CardReader) => {
         console.log(`reader found: ${reader}`);
         reader.on('status', (status: Status) => {
-          console.log(`reader status changed: ${status}`);
+          console.log(`reader status changed: ${status}`, status);
           if ((status.state & reader.SCARD_STATE_PRESENT)) {
+            console.log('detected card Present.');
             const sec2GoCard = new Security2GoCard(reader);
-            const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx);
+            sec2GoCard.log_debug_signing = true;
+            sec2GoCard.log_debug_web3 = true;
+            console.log('retrieving signed transaction...');
+            const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx, this.cardKeyIndex);
             getSignedTransactionPromise.then((signedTransaction: SignedTransaction) => {
+              console.log('resolving web3 signer');
               resolve(signedTransaction);
             });
           }

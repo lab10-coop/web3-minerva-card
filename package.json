@@ -6,6 +6,7 @@
   "scripts": {
     "tsc": "tsc",
     "dev": "ts-node-dev --respawn --transpileOnly ./src/index.ts",
+    "start": "npm run tsc && npm run test",
     "test": "node ./build/test.js"
   },
   "repository": {
