@@ -5,13 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_1 = require("./index");
 const web3_1 = __importDefault(require("web3"));
-const ethereumjs_util_1 = __importDefault(require("ethereumjs-util"));
-// import web3Core from 'web3-core';
-// import { Provider, HttpProvider } from 'web3/providers';
-// abstract class App {
-//   static init() : any {
-//   }
-// }
 async function test() {
     console.log('started a test!');
     const cardSigner = new index_1.MinervaCardSigner();
@@ -37,15 +30,5 @@ async function test() {
     const result = await web3Instance.eth.sendTransaction(transaction);
     console.log('transaction sent!', result);
 }
-function testFailingEcrecover() {
-    const r = Buffer.from('15670e3c763598c4c1835519ba20cef01ea381fb6fec41a38cee2c11745a7d25', 'hex');
-    const s = Buffer.from('2963c8c2ec1f9fda414b1d1b9088813f2b9b1bc8f603574059834dddfc389a5b', 'hex');
-    const v = 27;
-    const hash = Buffer.from('b0218d7a7f531b586e6a8fc6c117a6ba169c410d7cdfff47cd6c314231c63c12', 'hex');
-    console.log('r:' + r.toString('utf-8'));
-    const pubKey = ethereumjs_util_1.default.ecrecover(hash, v, r, s);
-    console.log('publicKey:' + pubKey.toString('utf-8'));
-}
-// testFailingEcrecover();
 test();
 //# sourceMappingURL=test.js.map

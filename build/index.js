@@ -10,7 +10,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const web3utils = require('web3-utils');
 const util = require('util');
-const Tx = require('ethereumjs-tx');
+const ethereumjstx = require('ethereumjs-tx');
 const pcsc = require('@ap-mitch/pcsclite');
 // const utils = require('ethereumjs-util');
 // import web3Eth from 'web3-eth';
@@ -36,12 +36,12 @@ function int8ArraytoHexString(byteArray) {
     });
     return s;
 }
-function hexStringToBuffer(_hexString) {
-    let hexString = _hexString;
-    if (hexString.startsWith('0x')) {
-        hexString = hexString.substring(2, hexString.length);
+function hexStringToBuffer(hexString) {
+    let hexStr = hexString;
+    if (hexStr.startsWith('0x')) {
+        hexStr = hexStr.substring(2, hexStr.length);
     }
-    return Buffer.from(hexString, 'hex');
+    return Buffer.from(hexStr, 'hex');
 }
 function isError(code) {
     if (code[0] === 0x90 && code[1] === 0) {
@@ -243,8 +243,8 @@ class Security2GoCard {
         // todo: in our case protocol was allways 2. sometimes reader.connect() delievers a protocol number, sometimes not
         // this is a very uncool workaround for this problem.
         this.PROTOCOL_ID = 2;
-        this.log_debug_signing = false;
-        this.log_debug_web3 = false;
+        this.logDebugSigning = false;
+        this.logDebugWeb3 = false;
     }
     /**
       * returns the publicKey of the given index of the card.
@@ -379,7 +379,7 @@ class Security2GoCard {
         };
         const correctPublicKey = await this.getPublicKey(cardKeyIndex);
         function isAddressMatching(testingVvalue) {
-            console.log(`isAddressMatching ? r: ${result.r} s: ${result.s} v: ${testingVvalue} hash: ${toHex(hashBytes)}`);
+            // console.log(`isAddressMatching ? r: ${result.r} s: ${result.s} v: ${testingVvalue} hash: ${toHex(hashBytes)}`);
             const pubKey = ethereumjs_util_1.default.ecrecover(hashBytes, testingVvalue, hexStringToBuffer(result.r), hexStringToBuffer(result.s));
             // console.log('comparing public key');
             // console.log(pubKey);
@@ -422,7 +422,7 @@ class Security2GoCard {
         // since it caused invalid signatures.
         transaction.chainId = undefined;
         // console.log('transaction at signing state', transaction);
-        const tx = new Tx(transaction);
+        const tx = new ethereumjstx(transaction);
         const result = {
             r: '0x',
             s: '0x',
@@ -468,33 +468,33 @@ class Security2GoCard {
     //   }
     // }
     /**
-       * console.log() if log_debug_web3
+       * console.log() if logDebugWeb3
        * @param {*} message
        */
     logWeb3(message) {
-        if (this.log_debug_web3) {
+        if (this.logDebugWeb3) {
             console.log(message);
         }
     }
     /**
-       * console.log() if log_debug_signing
+       * console.log() if logDebugSigning
        * @param {*} message
        */
     logSigning(message) {
-        if (this.log_debug_signing) {
+        if (this.logDebugSigning) {
             console.log(message);
         }
     }
 }
 class MinervaCardSigner {
-    constructor(cardKeyIndex = 1) {
+    constructor(cardKeyIndex = 1, logDebug = false) {
         this.cardKeyIndex = cardKeyIndex;
+        this.logDebug = logDebug;
     }
     sign(rawTx) {
         // 1.) we need to activate the reader
         // 2.) we need to wait for a card
         // 3.) we need to get a signature from the card and return it.
-        // pcsc.on('reader', (reader) => {
         const pcscCom = pcsc();
         // const result: SignedTransaction = undefined;
         console.log('Got Transaction to sign:', rawTx);
@@ -507,13 +507,14 @@ class MinervaCardSigner {
                     if ((status.state & reader.SCARD_STATE_PRESENT)) {
                         console.log('detected card Present.');
                         const sec2GoCard = new Security2GoCard(reader);
-                        sec2GoCard.log_debug_signing = true;
-                        sec2GoCard.log_debug_web3 = true;
+                        sec2GoCard.logDebugSigning = this.logDebug;
+                        sec2GoCard.logDebugWeb3 = this.logDebug;
                         console.log('retrieving signed transaction...');
                         const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx, this.cardKeyIndex);
                         getSignedTransactionPromise.then((signedTransaction) => {
                             console.log('resolving web3 signer');
                             resolve(signedTransaction);
+                            // todo: deinitializue reader and disconnect.
                         });
                     }
                 });

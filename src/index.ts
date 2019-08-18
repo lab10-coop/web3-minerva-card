@@ -6,7 +6,7 @@
 
 const web3utils = require('web3-utils');
 const util = require('util');
-const Tx = require('ethereumjs-tx');
+const ethereumjstx = require('ethereumjs-tx');
 const pcsc = require('@ap-mitch/pcsclite');
 // const utils = require('ethereumjs-util');
 
@@ -46,13 +46,12 @@ function int8ArraytoHexString(byteArray: Uint8Array) {
   return s;
 }
 
-function hexStringToBuffer(_hexString: string) : Buffer {
-  let hexString = _hexString;
-  if (hexString.startsWith('0x')) {
-    hexString = hexString.substring(2, hexString.length);
+function hexStringToBuffer(hexString: string) : Buffer {
+  let hexStr = hexString;
+  if (hexStr.startsWith('0x')) {
+    hexStr = hexStr.substring(2, hexStr.length);
   }
-  return Buffer.from(hexString, 'hex');
-
+  return Buffer.from(hexStr, 'hex');
 }
 
 function isError(code: Buffer) {
@@ -262,8 +261,8 @@ class Security2GoCard {
 
   public reader: CardReader;
   public PROTOCOL_ID: number;
-  public log_debug_signing: boolean;
-  public log_debug_web3: boolean;
+  public logDebugSigning: boolean;
+  public logDebugWeb3: boolean;
 
   /**
      * Represents an Infinion Security2Go played on a card reader using the pcsclite framework.
@@ -275,8 +274,8 @@ class Security2GoCard {
     // todo: in our case protocol was allways 2. sometimes reader.connect() delievers a protocol number, sometimes not
     // this is a very uncool workaround for this problem.
     this.PROTOCOL_ID = 2;
-    this.log_debug_signing = false;
-    this.log_debug_web3 = false;
+    this.logDebugSigning = false;
+    this.logDebugWeb3 = false;
   }
 
   /**
@@ -483,7 +482,7 @@ class Security2GoCard {
 
     // console.log('transaction at signing state', transaction);
 
-    const tx = new Tx(transaction);
+    const tx = new ethereumjstx(transaction);
 
     const result = {
       r: '0x',
@@ -540,21 +539,21 @@ class Security2GoCard {
   // }
 
   /**
-     * console.log() if log_debug_web3
+     * console.log() if logDebugWeb3
      * @param {*} message
      */
   public logWeb3(message: string) {
-    if (this.log_debug_web3) {
+    if (this.logDebugWeb3) {
       console.log(message);
     }
   }
 
   /**
-     * console.log() if log_debug_signing
+     * console.log() if logDebugSigning
      * @param {*} message
      */
   public logSigning(message: any) {
-    if (this.log_debug_signing) {
+    if (this.logDebugSigning) {
       console.log(message);
     }
   }
@@ -562,7 +561,7 @@ class Security2GoCard {
 
 export class MinervaCardSigner implements TransactionSigner {
 
-  constructor(public cardKeyIndex: number = 1) {
+  constructor(public cardKeyIndex: number = 1, public logDebug = false) {
 
   }
 
@@ -571,7 +570,6 @@ export class MinervaCardSigner implements TransactionSigner {
     // 1.) we need to activate the reader
     // 2.) we need to wait for a card
     // 3.) we need to get a signature from the card and return it.
-
 
     const pcscCom = pcsc();
 
@@ -588,13 +586,14 @@ export class MinervaCardSigner implements TransactionSigner {
           if ((status.state & reader.SCARD_STATE_PRESENT)) {
             console.log('detected card Present.');
             const sec2GoCard = new Security2GoCard(reader);
-            sec2GoCard.log_debug_signing = true;
-            sec2GoCard.log_debug_web3 = true;
+            sec2GoCard.logDebugSigning = this.logDebug;
+            sec2GoCard.logDebugWeb3 = this.logDebug;
             console.log('retrieving signed transaction...');
             const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx, this.cardKeyIndex);
             getSignedTransactionPromise.then((signedTransaction: SignedTransaction) => {
               console.log('resolving web3 signer');
               resolve(signedTransaction);
+              // todo: deinitializue reader and disconnect.
             });
           }
         });
