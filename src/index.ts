@@ -572,7 +572,7 @@ export class MinervaCardSigner implements TransactionSigner {
     // 2.) we need to wait for a card
     // 3.) we need to get a signature from the card and return it.
 
-    // pcsc.on('reader', (reader) => {
+
     const pcscCom = pcsc();
 
     // const result: SignedTransaction = undefined;
