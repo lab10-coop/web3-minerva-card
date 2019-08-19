@@ -15,7 +15,7 @@ Since websites cannot directly interact with USB devices or NFC-Readers (web-nfc
 - [NPM](https://www.npmjs.com/get-npm) (tested with v6.4.1)
 
 # Example in js
-```
+```javascript
 const web3 = require('web3');
 const web3s2g = require('web3-s2g');
 
