@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@code.lab10.io:graz/04-artis/smartcard/web3-s2g.git"
+    "url": "https://github.com/lab10-coop/web3-s2g.git"
   },
   "keywords": [
     "infineon",

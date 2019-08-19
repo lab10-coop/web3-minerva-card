@@ -1,6 +1,6 @@
-# security2go
+# web3-s2g
 
-nodejs library for interacting with the Infineon Securiy2Go SmartCard for signing transactions for ethereum blockchain based systems on a nodejs server.
+A nodejs library for interacting with the Infineon Securiy2Go SmartCard for signing transactions for ethereum blockchain based systems on a nodejs server.
 Since websites cannot directly interact with USB devices or NFC-Readers (web-nfc does NOT solve this issue in this case) this library works only for nodejs server instance. 
 
 # Requirements
@@ -41,7 +41,7 @@ Since websites cannot directly interact with USB devices or NFC-Readers (web-nfc
   const result = await web3Instance.eth.sendTransaction(transaction);
 ```
 
-#troubleshooting 
+# troubleshooting 
 
-##Linux
+## Linux
 There are known problems with PC/SC Smart Card Daemon (pcscd). Sometimes the cardreader stops working immediatly after plugging it in or booting up the computer. A restart of the daemon can help in this case `systemctl restart pcscd`
