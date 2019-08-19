@@ -559,10 +559,12 @@ class Security2GoCard {
   }
 }
 
+/**
+ * This TransactionSigner can be used as web3 option to use the Minerva card to sign ethereum transactions.
+ */
 export class MinervaCardSigner implements TransactionSigner {
 
   constructor(public cardKeyIndex: number = 1, public logDebug = false) {
-
   }
 
   public sign(rawTx: TransactionConfig) : Promise<SignedTransaction> {
@@ -571,6 +573,7 @@ export class MinervaCardSigner implements TransactionSigner {
     // 2.) we need to wait for a card
     // 3.) we need to get a signature from the card and return it.
 
+    console.log('creating new pcsc instance', rawTx);
     const pcscCom = pcsc();
 
     // const result: SignedTransaction = undefined;
@@ -578,22 +581,24 @@ export class MinervaCardSigner implements TransactionSigner {
 
     const promise = new Promise<SignedTransaction>((resolve, reject) => {
 
-      console.log('Trying to connect to Reader');
+      if (this.logDebug) console.log('Trying to connect to Reader');
       pcscCom.on('reader', (reader: CardReader) => {
-        console.log(`reader found: ${reader}`);
+        if (this.logDebug) console.log(`reader found: ${reader}`);
         reader.on('status', (status: Status) => {
-          console.log(`reader status changed: ${status}`, status);
+          if (this.logDebug) console.log(`reader status changed: ${status}`, status);
           if ((status.state & reader.SCARD_STATE_PRESENT)) {
-            console.log('detected card Present.');
+            if (this.logDebug) console.log('detected card Present.');
             const sec2GoCard = new Security2GoCard(reader);
             sec2GoCard.logDebugSigning = this.logDebug;
             sec2GoCard.logDebugWeb3 = this.logDebug;
-            console.log('retrieving signed transaction...');
+            if (this.logDebug) console.log('retrieving signed transaction...');
             const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx, this.cardKeyIndex);
             getSignedTransactionPromise.then((signedTransaction: SignedTransaction) => {
-              console.log('resolving web3 signer');
+              reader.disconnect((err: any) => {
+                console.error('error during disconnect.');
+              });
+              if (this.logDebug) console.log('resolving web3 signer');
               resolve(signedTransaction);
-              // todo: deinitializue reader and disconnect.
             });
           }
         });

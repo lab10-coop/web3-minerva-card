@@ -5,9 +5,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_1 = require("./index");
 const web3_1 = __importDefault(require("web3"));
+function wait(ms) {
+    const start = new Date().getTime();
+    let end = start;
+    while (end < start + ms) {
+        end = new Date().getTime();
+    }
+}
 async function test() {
     console.log('started a test!');
-    const cardSigner = new index_1.MinervaCardSigner();
+    const cardSigner = new index_1.MinervaCardSigner(1, true);
     const web3Address = 'https://rpc.tau1.artis.network';
     // web3Core.AbstractWeb3Module
     const web3tmp = new web3_1.default(web3Address);
@@ -16,8 +23,6 @@ async function test() {
         defaultGasPrice: web3tmp.utils.toHex('100000000000'),
         transactionSigner: cardSigner,
     };
-    // const provider = new HttpProvider();
-    // const web3Instance = new Web3(web3Address , null, web3Options);
     const web3Instance = new web3_1.default(web3Address, undefined, web3Options);
     const transaction = {
         from: '0x756269ce7e0285670ecbd234f230645efba049d3',
@@ -31,4 +36,5 @@ async function test() {
     console.log('transaction sent!', result);
 }
 test();
+wait(600000);
 //# sourceMappingURL=test.js.map

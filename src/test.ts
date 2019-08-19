@@ -3,10 +3,18 @@ import { MinervaCardSigner } from './index';
 import web3 from 'web3';
 import ethereumjsUtil from 'ethereumjs-util';
 
+function wait(ms: number) {
+  const start = new Date().getTime();
+  let end = start;
+  while (end < start + ms) {
+    end = new Date().getTime();
+  }
+}
+
 async function test() {
   console.log('started a test!');
 
-  const cardSigner = new MinervaCardSigner();
+  const cardSigner = new MinervaCardSigner(1, true);
   const web3Address = 'https://rpc.tau1.artis.network';
 
   // web3Core.AbstractWeb3Module
@@ -19,9 +27,6 @@ async function test() {
     transactionSigner : cardSigner,
   };
 
-  // const provider = new HttpProvider();
-
-  // const web3Instance = new Web3(web3Address , null, web3Options);
   const web3Instance = new web3(web3Address, undefined, web3Options);
 
   const transaction = {
@@ -38,3 +43,4 @@ async function test() {
 }
 
 test();
+wait(600000);

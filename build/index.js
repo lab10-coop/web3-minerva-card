@@ -486,6 +486,9 @@ class Security2GoCard {
         }
     }
 }
+/**
+ * This TransactionSigner can be used as web3 option to use the Minerva card to sign ethereum transactions.
+ */
 class MinervaCardSigner {
     constructor(cardKeyIndex = 1, logDebug = false) {
         this.cardKeyIndex = cardKeyIndex;
@@ -495,24 +498,34 @@ class MinervaCardSigner {
         // 1.) we need to activate the reader
         // 2.) we need to wait for a card
         // 3.) we need to get a signature from the card and return it.
+        console.log('creating new pcsc instance', rawTx);
         const pcscCom = pcsc();
         // const result: SignedTransaction = undefined;
         console.log('Got Transaction to sign:', rawTx);
         const promise = new Promise((resolve, reject) => {
-            console.log('Trying to connect to Reader');
+            if (this.logDebug)
+                console.log('Trying to connect to Reader');
             pcscCom.on('reader', (reader) => {
-                console.log(`reader found: ${reader}`);
+                if (this.logDebug)
+                    console.log(`reader found: ${reader}`);
                 reader.on('status', (status) => {
-                    console.log(`reader status changed: ${status}`, status);
+                    if (this.logDebug)
+                        console.log(`reader status changed: ${status}`, status);
                     if ((status.state & reader.SCARD_STATE_PRESENT)) {
-                        console.log('detected card Present.');
+                        if (this.logDebug)
+                            console.log('detected card Present.');
                         const sec2GoCard = new Security2GoCard(reader);
                         sec2GoCard.logDebugSigning = this.logDebug;
                         sec2GoCard.logDebugWeb3 = this.logDebug;
-                        console.log('retrieving signed transaction...');
+                        if (this.logDebug)
+                            console.log('retrieving signed transaction...');
                         const getSignedTransactionPromise = sec2GoCard.getSignedTransaction(rawTx, this.cardKeyIndex);
                         getSignedTransactionPromise.then((signedTransaction) => {
-                            console.log('resolving web3 signer');
+                            reader.disconnect((err) => {
+                                console.error('error during disconnect.');
+                            });
+                            if (this.logDebug)
+                                console.log('resolving web3 signer');
                             resolve(signedTransaction);
                             // todo: deinitializue reader and disconnect.
                         });
