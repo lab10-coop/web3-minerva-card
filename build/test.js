@@ -14,9 +14,8 @@ function wait(ms) {
 }
 async function test() {
     console.log('started a test!');
-    const cardSigner = new index_1.MinervaCardSigner(1, true);
+    const cardSigner = new index_1.MinervaCardTransactionSigner(1, true);
     const web3Address = 'https://rpc.tau1.artis.network';
-    // web3Core.AbstractWeb3Module
     const web3tmp = new web3_1.default(web3Address);
     const web3Options = {
         transactionConfirmationBlocks: 1,
@@ -25,7 +24,7 @@ async function test() {
     };
     const web3Instance = new web3_1.default(web3Address, undefined, web3Options);
     const transaction = {
-        from: '0x756269ce7e0285670ecbd234f230645efba049d3',
+        from: '0x756269ce7e0285670ecbd234f230645efba049d3' /* requires to be the address of the MinervaCard */,
         to: '0x3939a535d686da047c589c80538ceb6cffc933ee',
         value: '0x1000',
         gasPrice: web3Instance.utils.toHex('100000000000'),

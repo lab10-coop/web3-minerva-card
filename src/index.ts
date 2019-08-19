@@ -562,7 +562,7 @@ class Security2GoCard {
 /**
  * This TransactionSigner can be used as web3 option to use the Minerva card to sign ethereum transactions.
  */
-export class MinervaCardSigner implements TransactionSigner {
+export class MinervaCardTransactionSigner implements TransactionSigner {
 
   constructor(public cardKeyIndex: number = 1, public logDebug = false) {
   }

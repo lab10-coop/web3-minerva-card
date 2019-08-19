@@ -489,7 +489,7 @@ class Security2GoCard {
 /**
  * This TransactionSigner can be used as web3 option to use the Minerva card to sign ethereum transactions.
  */
-class MinervaCardSigner {
+class MinervaCardTransactionSigner {
     constructor(cardKeyIndex = 1, logDebug = false) {
         this.cardKeyIndex = cardKeyIndex;
         this.logDebug = logDebug;
@@ -527,7 +527,6 @@ class MinervaCardSigner {
                             if (this.logDebug)
                                 console.log('resolving web3 signer');
                             resolve(signedTransaction);
-                            // todo: deinitializue reader and disconnect.
                         });
                     }
                 });
@@ -536,5 +535,5 @@ class MinervaCardSigner {
         return promise;
     }
 }
-exports.MinervaCardSigner = MinervaCardSigner;
+exports.MinervaCardTransactionSigner = MinervaCardTransactionSigner;
 //# sourceMappingURL=index.js.map
