@@ -1,6 +1,6 @@
 {
   "name": "web3-s2g",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "nodejs library for interacting with the Infineon Securiy2Go SmartCard for signing transactions for ethereum blockchain based systems.",
   "main": "index.js",
   "scripts": {
