@@ -14,16 +14,26 @@ Since websites cannot directly interact with USB devices or NFC-Readers (web-nfc
 - [Node.js](https://nodejs.org/en/) v10 LTS (tested with v10.15.3)
 - [NPM](https://www.npmjs.com/get-npm) (tested with v6.4.1)
 
-# Example
+# Example in js
 ```
-  const cardSigner = new MinervaCardTransactionSigner(1, true);
+const web3 = require('web3');
+const web3s2g = require('web3-s2g');
+
+function wait(ms) {
+  const start = new Date().getTime();
+  let end = start;
+  while (end < start + ms) {
+    end = new Date().getTime();
+  }
+}
+
+async function test() {
+
+  console.log('started a test!');
+  const cardSigner = new web3s2g.MinervaCardTransactionSigner(1, true);
   const web3Address = 'https://rpc.tau1.artis.network';
 
-  const web3tmp = new web3(web3Address);
-
   const web3Options = {
-    transactionConfirmationBlocks: 1,
-    defaultGasPrice : web3tmp.utils.toHex('100000000000'),
     transactionSigner : cardSigner,
   };
 
@@ -39,6 +49,12 @@ Since websites cannot directly interact with USB devices or NFC-Readers (web-nfc
 
   console.log('sending transaction...');
   const result = await web3Instance.eth.sendTransaction(transaction);
+  console.log('transaction sent!', result);
+
+}
+
+test();
+wait(600000);
 ```
 
 # troubleshooting 

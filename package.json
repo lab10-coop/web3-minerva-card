@@ -17,12 +17,13 @@
     "infineon",
     "security2go",
     "ethereum",
-    "evm",
+    "artis",
+    "minerva",
     "nfc",
     "pcsclite"
   ],
   "author": "thomas.haller@lab10.coop",
-  "license": "ISC",
+  "license": "Apache 2.0",
   "dependencies": {
     "@ap-mitch/pcsclite": "^0.5.3",
     "@types/ethereumjs-util": "^5.2.0",
