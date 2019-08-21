@@ -1,23 +1,24 @@
-# web3-s2g
+# About
 
-A nodejs library for interacting with the Infineon Securiy2Go SmartCard for signing transactions for ethereum blockchain based systems on a nodejs server.
-Since websites cannot directly interact with USB devices or NFC-Readers (web-nfc does NOT solve this issue in this case) this library works only for nodejs server instance. 
+This library implements a module for [web3.js](https://github.com/ethereum/web3.js/) which allows to sign arbitrary Ethereum transactions with the Minerva Card.  
+It's suited for deployments of desktop Dapps or Dapps running on standalone devices (e.g. a Raspberry Pi).  
+At the moment it's not suited for browser Dapps because of the limitations of the Web platform in regard to accessing NFC devices. 
 
 # Requirements
 
-- A NFC Card reader that is supported by [PCSC lite](https://pcsclite.apdu.fr/)
-- In order to install the package you need to have installed in the system the pcsclite libraries. For example, in Debian/Ubuntu: `apt-get install libpcsclite1 libpcsclite-dev`
-- Access to an Ethereum compatible blockchain
-- A [Security2Go NFC Card](https://github.com/Infineon/blockchain) 
-- Linux OS - tested with Ubuntu 18 LTS - but most other common Linux distros should do as well
-- libudev and libusb 1.0.8 or later
+- Linux OS - tested with Ubuntu 18.04 LTS - but most other common Linux distros should do as well
 - [Node.js](https://nodejs.org/en/) v10 LTS (tested with v10.15.3)
 - [NPM](https://www.npmjs.com/get-npm) (tested with v6.4.1)
+- A Minerva Card
+- An NFC Card reader that is supported by [PCSC lite](https://pcsclite.apdu.fr/)
+- The pcsclite libraries need to be installed on the system. For example, in Debian/Ubuntu: `apt-get install libpcsclite1 libpcsclite-dev`
+- libudev and libusb 1.0.8 or later
+- Ethereum or an Ethereum compatible sidechain (e.g. [ARTIS](https://artis.eco/)) 
 
-# Example in js
+# Example
 ```javascript
 const web3 = require('web3');
-const web3s2g = require('web3-s2g');
+const web3MC = require('web3-minerva-card');
 
 function wait(ms) {
   const start = new Date().getTime();
@@ -28,9 +29,8 @@ function wait(ms) {
 }
 
 async function test() {
-
   console.log('started a test!');
-  const cardSigner = new web3s2g.MinervaCardTransactionSigner(1, true);
+  const cardSigner = new web3MC.MinervaCardTransactionSigner(1, true);
   const web3Address = 'https://rpc.tau1.artis.network';
 
   const web3Options = {
@@ -50,14 +50,14 @@ async function test() {
   console.log('sending transaction...');
   const result = await web3Instance.eth.sendTransaction(transaction);
   console.log('transaction sent!', result);
-
 }
 
 test();
 wait(600000);
 ```
 
-# troubleshooting 
+# Troubleshooting 
 
 ## Linux
-There are known problems with PC/SC Smart Card Daemon (pcscd). Sometimes the cardreader stops working immediatly after plugging it in or booting up the computer. A restart of the daemon can help in this case `systemctl restart pcscd`
+
+There are known problems with PC/SC Smart Card Daemon (pcscd). Sometimes the card reader stops working immediately after plugging it in or booting up the computer. A restart of the daemon can help in this case: `systemctl restart pcscd`
