@@ -1,7 +1,7 @@
 {
-  "name": "web3-s2g",
+  "name": "web3-minerva-card",
   "version": "0.1.1",
-  "description": "nodejs library for interacting with the Infineon Securiy2Go SmartCard for signing transactions for ethereum blockchain based systems.",
+  "description": "nodejs library for interacting with Minerva Card for signing Ethereum transactions with web3.js.",
   "main": "index.js",
   "scripts": {
     "tsc": "tsc",
@@ -11,11 +11,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/lab10-coop/web3-s2g.git"
+    "url": "https://github.com/lab10-coop/web3-minerva-card.git"
   },
   "keywords": [
-    "infineon",
-    "security2go",
     "ethereum",
     "artis",
     "minerva",

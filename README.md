@@ -9,7 +9,7 @@ At the moment it's not suited for browser Dapps because of the limitations of th
 - Linux OS - tested with Ubuntu 18.04 LTS - but most other common Linux distros should do as well
 - [Node.js](https://nodejs.org/en/) v10 LTS (tested with v10.15.3)
 - [NPM](https://www.npmjs.com/get-npm) (tested with v6.4.1)
-- A Minerva Card
+- A Minerva Card (based on a high-security Infineon NFC chip)
 - An NFC Card reader that is supported by [PCSC lite](https://pcsclite.apdu.fr/)
 - The pcsclite libraries need to be installed on the system. For example, in Debian/Ubuntu: `apt-get install libpcsclite1 libpcsclite-dev`
 - libudev and libusb 1.0.8 or later
