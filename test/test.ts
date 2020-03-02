@@ -1,5 +1,5 @@
 
-import { MinervaCardTransactionSigner } from './index';
+import { MinervaCardTransactionSigner } from '../src';
 import web3 from 'web3';
 
 function wait(ms: number) {

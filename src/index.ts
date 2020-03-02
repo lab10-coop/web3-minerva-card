@@ -8,9 +8,10 @@ const web3utils = require('web3-utils');
 const util = require('util');
 const ethereumjstx = require('ethereumjs-tx');
 const pcsc = require('@ap-mitch/pcsclite');
-// const utils = require('ethereumjs-util');
 
+// const utils = require('ethereumjs-util');
 // import web3Eth from 'web3-eth';
+
 import ethereumjsUtil from 'ethereumjs-util';
 // const { pcsc } = require('pcsclite');
 
@@ -145,11 +146,11 @@ function parseSelectAppResponse(response: Buffer) : ParseSelectAppResponseResult
 * Sends raw byte commands to the card and receives the response.
 * sends the always required SelectApp command in advance.
 *
-* @param {Security2GoCard} card object
+* @param {MinervaCard} card object
 * @param {number[]} bytes raw byte[] with the netto data.
 * @param {receiveHandler} callback once the operation is finished.
 */
-function sendCommand(card: Security2GoCard, bytes: Uint8Array,  receiveHandler:
+function sendCommand(card: MinervaCard, bytes: Uint8Array,  receiveHandler:
   (buffer?: Buffer, error?: Error) => void = (buffer?: Buffer, error?: Error) => { return; }) {
   const maxResponseLength = 128;
   card.logSigning('connecting...');
@@ -209,7 +210,7 @@ function sendCommand(card: Security2GoCard, bytes: Uint8Array,  receiveHandler:
   });
 }
 
-async function generateSignatureRaw(card: Security2GoCard, bytes: Buffer, keyIndex: number) {
+async function generateSignatureRaw(card: MinervaCard, bytes: Buffer, keyIndex: number) {
   function generateSignatureRawFunction(args: any, callback: (error?: Error, result?: string) => void) {
     // const { bytes } = args;
     // const { keyIndex } = args;
@@ -257,7 +258,7 @@ async function generateSignatureRaw(card: Security2GoCard, bytes: Buffer, keyInd
   return func({ card, bytes, keyIndex });
 }
 
-class Security2GoCard {
+export class MinervaCard {
 
   public reader: CardReader;
   public PROTOCOL_ID: number;
@@ -588,7 +589,7 @@ export class MinervaCardTransactionSigner implements TransactionSigner {
           if (this.logDebug) console.log(`reader status changed: ${status}`, status);
           if ((status.state & reader.SCARD_STATE_PRESENT)) {
             if (this.logDebug) console.log('detected card Present.');
-            const sec2GoCard = new Security2GoCard(reader);
+            const sec2GoCard = new MinervaCard(reader);
             sec2GoCard.logDebugSigning = this.logDebug;
             sec2GoCard.logDebugWeb3 = this.logDebug;
             if (this.logDebug) console.log('retrieving signed transaction...');
