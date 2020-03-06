@@ -1,6 +1,6 @@
 {
   "name": "web3-minerva-card",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "nodejs library for interacting with Minerva Card for signing Ethereum transactions with web3.js.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

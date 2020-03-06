@@ -192,8 +192,9 @@ function sendCommand(card: MinervaCard, bytes: Uint8Array,  receiveHandler:
                 // asume all 2 byte results are errors ?!
                 if (dataTransmit.length === 2 && isError(dataTransmit)) {
                   const errorMsg = getGenericErrorAsString(dataTransmit);
-                  console.error(`Received Data is Error received: ${errorMsg}`);
-                  throw errorMsg;
+                  const exceptionMessage = `Received Data is Error received: ${errorMsg}`;
+                  console.error(exceptionMessage);
+                  receiveHandler(undefined, new Error(exceptionMessage));
                 }
 
                 // reader.close();
@@ -219,7 +220,7 @@ async function generateSignatureRaw(card: MinervaCard, bytes: Buffer, keyIndex: 
     if (bytes.length !== 32) {
       const error = `message to sign needs to be 32 byte long. got:${bytes.length}`;
       card.logSigning(error);
-      throw error;
+      callback(new Error(error), undefined);
     }
 
     const messageBuffer = new ArrayBuffer(38);
